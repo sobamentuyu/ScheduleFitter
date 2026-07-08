@@ -18,6 +18,7 @@
 - フロントエンド：React + Vite
 - バックエンド：PHP
 - データベース：RDB + SQL
+- UIライブラリ：daisyui
 - 開発環境：Docker
 
 ## 主な機能
