@@ -1,55 +1,77 @@
-# PLAN-FIT
-2026夏合宿～空き時間ラボ～
+# React + TypeScript + Vite
 
+This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
 
-## アプリ概要
-- 適当に打ったらAIが予定を振り分けてくれる
-- 経路検索して　予定近すぎたら危ないよって教えてくれる
-- バッティングするならするよって教えてくれる
-- どっちを優先するか簡単に選ばせてくれる　ボタン二つ用意するとか
-- 消すのも簡単　だけどちゃんと確認してくれる
-- カテゴリ指定しなかったら、推測して　確認して　設定してほしい
-- 音声入力したい
-- 画像認識してそれも勝手に入れてほしい
+Currently, two official plugins are available:
 
+- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
+- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
 
-## 技術スタック
+## React Compiler
 
-- フロントエンド：React + Vite
-- バックエンド：PHP
-- データベース：RDB + SQL
-- UIライブラリ：daisyui
-- 開発環境：Docker
+The React Compiler is enabled on this template. See [this documentation](https://react.dev/learn/react-compiler) for more information.
 
-## 主な機能
-- 自然文入力
-  
-  例：「明日18時から新宿で友達とご飯」<br>
-  AIが日時、場所、内容、カテゴリを推測して予定化する。
+Note: This will impact Vite dev & build performances.
 
-- 画像認識入力<br>  
-  チラシ、スクリーンショット、予約画面などから予定情報を読み取る。
+## Expanding the ESLint configuration
 
-- 音声入力<br>  
-  話した内容を文字起こしして、予定として解析する。
+If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
 
-- 予定の自動登録<br>  
-  AIが推測した予定内容を確認後、カレンダーに登録する。
+```js
+export default defineConfig([
+  globalIgnores(['dist']),
+  {
+    files: ['**/*.{ts,tsx}'],
+    extends: [
+      // Other configs...
 
-- カテゴリ自動推測<br>  
-  カテゴリ指定がない場合、AIが「仕事」「学校」「遊び」「移動」「病院」などを推測し、確認して設定する。
+      // Remove tseslint.configs.recommended and replace with this
+      tseslint.configs.recommendedTypeChecked,
+      // Alternatively, use this for stricter rules
+      tseslint.configs.strictTypeChecked,
+      // Optionally, add this for stylistic rules
+      tseslint.configs.stylisticTypeChecked,
 
-- バッティング検知<br>  
-  既存予定と時間が重なる場合、衝突を通知する。
+      // Other configs...
+    ],
+    languageOptions: {
+      parserOptions: {
+        project: ['./tsconfig.node.json', './tsconfig.app.json'],
+        tsconfigRootDir: import.meta.dirname,
+      },
+      // other options...
+    },
+  },
+])
 
-- 優先予定の選択<br>  
-  バッティングした場合、ボタンでどちらを優先するか選べる。
+```
 
-- 移動時間リスク判定<br>  
-  予定同士の場所が離れていて、移動時間が足りない場合に警告する。
+You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
 
-- 予定削除<br>  
-  削除は簡単にできるが、実行前に確認を出す。
+```js
+// eslint.config.js
+import reactX from 'eslint-plugin-react-x'
+import reactDom from 'eslint-plugin-react-dom'
 
-- AIメッセージ表示<br>  
-  登録成功、削除成功、衝突、移動リスク、未入力項目などを表示する。
+export default defineConfig([
+  globalIgnores(['dist']),
+  {
+    files: ['**/*.{ts,tsx}'],
+    extends: [
+      // Other configs...
+      // Enable lint rules for React
+      reactX.configs['recommended-typescript'],
+      // Enable lint rules for React DOM
+      reactDom.configs.recommended,
+    ],
+    languageOptions: {
+      parserOptions: {
+        project: ['./tsconfig.node.json', './tsconfig.app.json'],
+        tsconfigRootDir: import.meta.dirname,
+      },
+      // other options...
+    },
+  },
+])
+
+```
