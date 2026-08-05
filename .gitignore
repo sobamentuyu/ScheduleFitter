@@ -1,0 +1,22 @@
+# 依存パッケージ（再構築可能なため管理不要）
+frontend/node_modules/
+backend/vendor/
+
+# 環境変数・機密情報（セキュリティ上の理由から除外）
+.env
+*.env
+!.env.example
+frontend/.env*
+backend/.env
+
+# ビルド成果物および開発時の動的生成ファイル
+frontend/dist/
+frontend/dist-ssr/
+frontend/.vite/
+*.log
+
+# OS・エディタ固有のシステムファイル
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/

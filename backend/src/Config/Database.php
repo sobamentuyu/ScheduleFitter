@@ -6,13 +6,22 @@ use PDOException;
 
 class Database {
     public static function getConnection(): PDO {
-        $host = getenv('DB_HOST');
-        $port = getenv('DB_PORT') ?: '5432';
-        $db   = getenv('DB_DATABASE');
-        $user = getenv('DB_USERNAME');
-        $pass = getenv('DB_PASSWORD');
+        // Docker環境かどうかで設定値を切り替え
+        if (getenv('IS_DOCKER') === 'true') {
+            $host = 'db';
+            $port = '5432';
+            $db   = 'schedulefitter';
+            $user = 'postgres';
+            $pass = 'password';
+        } else {
+            $host = getenv('DB_HOST') ?: '127.0.0.1';
+            $port = getenv('DB_PORT') ?: '5432';
+            $db   = getenv('DB_DATABASE') ?: 'schedulefitter';
+            $user = getenv('DB_USERNAME') ?: 'postgres';
+            $pass = getenv('DB_PASSWORD') ?: 'password';
+        }
 
-        $dsn = "pgsql:host={$host};port={$port};dbname={$db};";
+        $dsn = "pgsql:host={$host};port={$port};dbname={$db}";
 
         try {
             return new PDO($dsn, $user, $pass, [
