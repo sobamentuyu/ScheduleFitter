@@ -1,24 +1,22 @@
-# Logs
-logs
+# 依存パッケージ（再構築可能なため管理不要）
+frontend/node_modules/
+backend/vendor/
+
+# 環境変数・機密情報（セキュリティ上の理由から除外）
+.env
+*.env
+!.env.example
+frontend/.env*
+backend/.env
+
+# ビルド成果物および開発時の動的生成ファイル
+frontend/dist/
+frontend/dist-ssr/
+frontend/.vite/
 *.log
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-pnpm-debug.log*
-lerna-debug.log*
 
-node_modules
-dist
-dist-ssr
-*.local
-
-# Editor directories and files
-.vscode/*
-!.vscode/extensions.json
-.idea
+# OS・エディタ固有のシステムファイル
 .DS_Store
-*.suo
-*.ntvs*
-*.njsproj
-*.sln
-*.sw?
+Thumbs.db
+.vscode/
+.idea/
