@@ -1,8 +1,9 @@
 import { useState } from 'react';
 
 interface User {
-	id: string;
+	id: number;
 	email: string;
+	userID: string;
 }
 
 interface LoginProps {
