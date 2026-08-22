@@ -1,4 +1,15 @@
-@import 'tailwindcss';
+@import "tailwindcss";
 @plugin "daisyui" {
   themes: all;
+}
+
+@plugin "daisyui/theme" {
+  name: "pastel";
+  default: true;
+  --color-primary: #ded3df;
+  --color-primary-content: #2a2a2a;
+}
+
+@theme inline {
+  --font-sans: "Zen Maru Gothic", ui-sans-serif, system-ui, sans-serif;
 }
