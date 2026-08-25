@@ -1,9 +1,7 @@
-import { getUserId } from '@/api/userId.ts';
 import { Text } from '@/ui/common/Text.tsx';
 import { useAuth } from '../contexts/AuthContext';
 
 export function Account() {
-	const userId = getUserId();
 	const { user } = useAuth();
 
 	return (
