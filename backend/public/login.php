@@ -40,7 +40,7 @@ try {
     ]);
 
     // 3. DBからユーザーを検索
-    $stmt = $pdo->prepare('SELECT id, email, name FROM users WHERE email = :email LIMIT 1');
+    $stmt = $pdo->prepare('SELECT id, email, userID FROM users WHERE email = :email LIMIT 1');
     $stmt->execute([':email' => $email]);
     $dbUser = $stmt->fetch();
 
@@ -48,11 +48,11 @@ try {
     if (!$dbUser) {
         $defaultName = explode('@', $email)[0];
         $insertStmt = $pdo->prepare(
-            'INSERT INTO users (email, name) VALUES (:email, :name) RETURNING id, email, name'
+            'INSERT INTO users (email, userID) VALUES (:email, :userID) RETURNING id, email, userID'
         );
         $insertStmt->execute([
             ':email' => $email,
-            ':name'  => $defaultName
+            ':userID'  => $defaultName
         ]);
         $dbUser = $insertStmt->fetch();
     }
@@ -64,7 +64,7 @@ try {
         'user' => [
             'id'    => (int)$dbUser['id'],
             'email' => $dbUser['email'],
-            'name'  => $dbUser['name']
+            'userID'  => $dbUser['userID']
         ]
     ], JSON_UNESCAPED_UNICODE);
 
