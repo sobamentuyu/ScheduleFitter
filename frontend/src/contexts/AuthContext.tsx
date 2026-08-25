@@ -1,47 +1,59 @@
-/* eslint-disable react-refresh/only-export-components */
-import { createContext, useContext, useState, type ReactNode } from 'react';
+import { createContext, useContext, useState, useEffect, type ReactNode } from 'react';
 
 export interface User {
 	id: number;
 	email: string;
-	userID: string;
-	name?: string;
+	userId: string;
 }
 
 interface AuthContextType {
 	user: User | null;
 	loading: boolean;
 	loginWithSso: () => Promise<void>;
-	logout: () => void;
+	logout: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
-	const [user, setUser] = useState<User | null>(() => {
-		const savedUser = localStorage.getItem('schedulefitter_user');
-		if (savedUser) {
-			try {
-				return JSON.parse(savedUser);
-			} catch {
-				localStorage.removeItem('schedulefitter_user');
-			}
-		}
-		return null;
-	});
-	const [loading, setLoading] = useState(false);
+	const [user, setUser] = useState<User | null>(null);
+	const [loading, setLoading] = useState(true);
 
-	// 2. SSOログイン実行（バックエンドへ問い合わせ）
-	// 開発時はモックとして、ヘッダーに特定の値を付与してバックエンドに問い合わせる
-	// 本番環境では、SSOのリダイレクトURLをバックエンドから取得してリダイレクトする形に変更する必要がある
+	// 初回ロード時: Cookie のセッションを使ってユーザー情報を取得
+	useEffect(() => {
+		const checkAuth = async () => {
+			try {
+				const res = await fetch('http://localhost:8080/me.php', {
+					method: 'GET',
+					credentials: 'include', // Cookie を送信
+				});
+
+				if (res.ok) {
+					const data = await res.json();
+					if (data.authenticated && data.user) {
+						setUser(data.user);
+					}
+				}
+			} catch (err) {
+				console.error('セッション確認エラー:', err);
+			} finally {
+				setLoading(false);
+			}
+		};
+
+		checkAuth();
+	}, []);
+
+	// SSOログイン処理
 	const loginWithSso = async () => {
 		setLoading(true);
 		try {
 			const response = await fetch('http://localhost:8080/login.php', {
 				method: 'GET',
+				credentials: 'include', // Set-Cookie を受け取る
 				headers: {
 					'Content-Type': 'application/json',
-					'X-Dev-User-Email': 'dev-user@example.com', // 開発時モックヘッダー
+					'X-Dev-User-Email': 'dev-user@example.com',
 				},
 			});
 
@@ -51,21 +63,27 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
 			const data = await response.json();
 			if (data.error || !data.user) {
-				throw new Error(data.message || 'ユーザー情報の取得に失敗しました');
+				throw new Error(data.message || 'ログインに失敗しました');
 			}
 
-			// 状態とローカルストレージを更新
 			setUser(data.user);
-			localStorage.setItem('schedulefitter_user', JSON.stringify(data.user));
 		} finally {
 			setLoading(false);
 		}
 	};
 
-	// 3. ログアウト処理
-	const logout = () => {
-		setUser(null);
-		localStorage.removeItem('schedulefitter_user');
+	// ログアウト処理
+	const logout = async () => {
+		try {
+			await fetch('http://localhost:8080/logout.php', {
+				method: 'POST',
+				credentials: 'include',
+			});
+		} catch (err) {
+			console.error('ログアウトエラー:', err);
+		} finally {
+			setUser(null);
+		}
 	};
 
 	return (
@@ -75,7 +93,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 	);
 };
 
-// カスタムフック
 export const useAuth = () => {
 	const context = useContext(AuthContext);
 	if (!context) {

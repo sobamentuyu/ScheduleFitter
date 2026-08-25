@@ -4,7 +4,7 @@ import { Header } from '@/ui/container/Header.tsx';
 import { Account } from '@/pages/Account.tsx';
 import { Setting } from '@/pages/Setting.tsx';
 import { Theme } from '@/pages/Theme.tsx';
-import { Top } from '@/pages/Top.tsx';
+import { Top } from '@/pages/Top';
 import Login from './pages/Login';
 
 export default function App() {
