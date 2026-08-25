@@ -4,14 +4,14 @@ services:
     image: postgres:16-alpine
     container_name: schedulefitter-db
     environment:
-      POSTGRES_DB: schedulefitter
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: password
+      POSTGRES_DB: schedulefitter
     ports:
       - '5432:5432'
     volumes:
       - pgdata:/var/lib/postgresql/data
-      - ./backend/sql:/docker-entrypoint-initdb.d:ro
+      - ./backend/database/sql:/docker-entrypoint-initdb.d:ro
 
   # PHP バックエンド (Apache)
   backend:
