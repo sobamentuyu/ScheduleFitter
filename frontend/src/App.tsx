@@ -1,6 +1,6 @@
 import { BrowserRouter, Route, Routes } from "react-router-dom";
 import { Header } from "./ui";
-import { Setting, Top } from "./pages";
+import { Setting, Top, Account, Theme } from "./pages";
 
 export default function App() {
   return (
@@ -10,6 +10,8 @@ export default function App() {
         <Routes>
           <Route path="/" element={<Top />} />
           <Route path="/setting" element={<Setting />} />
+          <Route path="/setting/account" element={<Account />} />
+          <Route path="/setting/theme" element={<Theme />} />
         </Routes>
       </div>
     </BrowserRouter>

@@ -12,7 +12,7 @@ export function Setting() {
       </Link>
       <Link
         to="/setting/theme"
-        className=" flex justify-center items-center bg-secondary text-2xl rounded-lg py-1"
+        className="flex justify-center items-center bg-secondary text-2xl rounded-lg py-1"
         aria-label="画面のテーマ"
       >
         画面のテーマ
