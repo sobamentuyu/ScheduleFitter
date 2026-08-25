@@ -12,8 +12,15 @@ ENV APACHE_DOCUMENT_ROOT /var/www/html/public
 RUN sed -ri -e 's!/var/www/html!${APACHE_DOCUMENT_ROOT}!g' /etc/apache2/sites-available/*.conf
 RUN sed -ri -e 's!/var/www/html!${APACHE_DOCUMENT_ROOT}!g' /etc/apache2/conf-available/*.conf
 
-# mod_rewriteの有効化
-RUN a2enmod rewrite
+# mod_rewriteの有効化 + .htaccess を許可
+RUN a2enmod rewrite headers \
+    && printf '%s\n' \
+      '<Directory /var/www/html/public>' \
+      '    AllowOverride All' \
+      '    Require all granted' \
+      '</Directory>' \
+      > /etc/apache2/conf-available/allow-override.conf \
+    && a2enconf allow-override
 
 # Composerの導入
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer

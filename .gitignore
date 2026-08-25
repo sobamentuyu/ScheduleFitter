@@ -1,4 +1,5 @@
 # 依存パッケージ（再構築可能なため管理不要）
+node_modules/
 frontend/node_modules/
 backend/vendor/
 

@@ -1,0 +1,10 @@
+RewriteEngine On
+
+# Authorization ヘッダを PHP に渡す
+RewriteCond %{HTTP:Authorization} .
+RewriteRule .* - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]
+
+# 実在するファイル・ディレクトリはそのまま
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule ^ index.php [QSA,L]
