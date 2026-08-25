@@ -1,9 +1,11 @@
-import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+/* eslint-disable react-refresh/only-export-components */
+import { createContext, useContext, useState, type ReactNode } from 'react';
 
 export interface User {
 	id: number;
 	email: string;
 	userID: string;
+	name?: string;
 }
 
 interface AuthContextType {
@@ -16,21 +18,18 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
-	const [user, setUser] = useState<User | null>(null);
-	const [loading, setLoading] = useState(true);
-
-	// 1. 初回ロード時に保存されているユーザー情報を復元
-	useEffect(() => {
+	const [user, setUser] = useState<User | null>(() => {
 		const savedUser = localStorage.getItem('schedulefitter_user');
 		if (savedUser) {
 			try {
-				setUser(JSON.parse(savedUser));
-			} catch (e) {
+				return JSON.parse(savedUser);
+			} catch {
 				localStorage.removeItem('schedulefitter_user');
 			}
 		}
-		setLoading(false);
-	}, []);
+		return null;
+	});
+	const [loading, setLoading] = useState(false);
 
 	// 2. SSOログイン実行（バックエンドへ問い合わせ）
 	// 開発時はモックとして、ヘッダーに特定の値を付与してバックエンドに問い合わせる

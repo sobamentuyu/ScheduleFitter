@@ -5,8 +5,6 @@ export default function Top() {
 
 	return (
 		<div className="min-h-screen bg-base-100 p-6">
-			{/* ユーザー情報の表示 */}
-			{/* ユーザー名情報の表示は以下の形式 */}
 			<div className="mb-4">
 				<p>ユーザー名: {user?.name}</p>
 				<p>ユーザーID: {user?.id}</p>
