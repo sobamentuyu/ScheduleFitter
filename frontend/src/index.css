@@ -8,6 +8,7 @@
   default: true;
   --color-primary: #ded3df;
   --color-primary-content: #2a2a2a;
+  --color-secondary: #f6e9f6;
 }
 
 @theme inline {
