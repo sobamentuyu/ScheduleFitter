@@ -1,6 +1,11 @@
 import { useState } from 'react';
 import Login from './pages/Login';
 import Top from './pages/Top';
+import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import Register from './pages/Register';
+import Dashboard from './pages/Dashboard';
+import ProtectedRoute from './components/ProtectedRoute';
+import { AuthProvider } from './pages/AuthContext';
 
 export interface User {
 	id: number;
@@ -8,12 +13,20 @@ export interface User {
 	name: string;
 }
 
-export default function App() {
-	const [currentUser, setCurrentUser] = useState<User | null>(null);
+const App: React.FC = () => {
+	return (
+		<AuthProvider>
+			<BrowserRouter>
+				<Routes>
+					<Route path="/login" element={<Login />} />
+					<Route path="/register" element={<Register />} />
+					<Route element={<ProtectedRoute />}>
+						<Route path="/dashboard" element={<Dashboard />} />
+					</Route>
+				</Routes>
+			</BrowserRouter>
+		</AuthProvider>
+	);
+};
 
-	if (!currentUser) {
-		return <Login onLoginSuccess={(user) => setCurrentUser(user)} />;
-	}
-
-	return <Top user={currentUser} onLogout={() => setCurrentUser(null)} />;
-}
+export default App;
