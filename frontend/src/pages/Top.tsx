@@ -1,19 +1,9 @@
-import { useAuth } from '../contexts/AuthContext';
+import { Calendar } from '@/ui/container/calendar/Calendar.tsx';
 
-export default function Top() {
-	const { user, logout } = useAuth();
-
+export function Top() {
 	return (
-		<div className="min-h-screen bg-base-100 p-6">
-			<div className="mb-4">
-				<p>ユーザー名: {user?.name}</p>
-				<p>ユーザーID: {user?.id}</p>
-				<p>ユーザーEメール: {user?.email}</p>
-			</div>
-			{/* ログアウトボタン */}
-			<button className="btn btn-outline btn-error btn-sm" onClick={logout}>
-				ログアウト
-			</button>
+		<div className="flex h-full min-h-0 flex-1 flex-col overflow-hidden bg-base-200">
+			<Calendar />
 		</div>
 	);
 }
