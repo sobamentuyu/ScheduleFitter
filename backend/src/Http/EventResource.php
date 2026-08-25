@@ -13,6 +13,7 @@ final class EventResource
     {
         return [
             'id' => (int) $row['id'],
+            'user_id' => (int) $row['user_id'],
             'title' => $row['title'],
             'description' => $row['description'],
             'location' => $row['location'],

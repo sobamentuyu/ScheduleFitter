@@ -1,6 +1,7 @@
 -- 予定（カレンダーイベント）テーブル
 CREATE TABLE IF NOT EXISTS events (
     id          BIGSERIAL PRIMARY KEY,
+    user_id     BIGINT NOT NULL,
     title       VARCHAR(255) NOT NULL,
     description TEXT,
     location    VARCHAR(255),
@@ -13,11 +14,13 @@ CREATE TABLE IF NOT EXISTS events (
     CONSTRAINT events_end_after_start CHECK (end_at >= start_at)
 );
 
+CREATE INDEX IF NOT EXISTS idx_events_user_id ON events (user_id);
 CREATE INDEX IF NOT EXISTS idx_events_start_at ON events (start_at);
 CREATE INDEX IF NOT EXISTS idx_events_end_at ON events (end_at);
 CREATE INDEX IF NOT EXISTS idx_events_category ON events (category);
 
 COMMENT ON TABLE events IS 'カレンダー予定';
+COMMENT ON COLUMN events.user_id IS '所有者のユーザーID';
 COMMENT ON COLUMN events.title IS '予定タイトル';
 COMMENT ON COLUMN events.description IS '詳細・メモ';
 COMMENT ON COLUMN events.location IS '場所';

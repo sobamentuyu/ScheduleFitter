@@ -16,12 +16,11 @@ final class EventRepository
     /**
      * @return list<array<string, mixed>>
      */
-    public function findAll(?string $from = null, ?string $to = null): array
+    public function findAll(int $userId, ?string $from = null, ?string $to = null): array
     {
-        $sql = 'SELECT * FROM events WHERE 1=1';
-        $params = [];
+        $sql = 'SELECT * FROM events WHERE user_id = :user_id';
+        $params = ['user_id' => $userId];
 
-        // FullCalendar の表示範囲と重なる予定を返す
         if ($from !== null && $from !== '') {
             $sql .= ' AND end_at >= :from';
             $params['from'] = $from;
@@ -38,10 +37,12 @@ final class EventRepository
         return $stmt->fetchAll();
     }
 
-    public function findById(int $id): ?array
+    public function findById(int $id, int $userId): ?array
     {
-        $stmt = $this->pdo->prepare('SELECT * FROM events WHERE id = :id');
-        $stmt->execute(['id' => $id]);
+        $stmt = $this->pdo->prepare(
+            'SELECT * FROM events WHERE id = :id AND user_id = :user_id'
+        );
+        $stmt->execute(['id' => $id, 'user_id' => $userId]);
         $row = $stmt->fetch();
         return $row === false ? null : $row;
     }
@@ -49,11 +50,12 @@ final class EventRepository
     public function create(array $data): array
     {
         $stmt = $this->pdo->prepare(
-            'INSERT INTO events (title, description, location, category, start_at, end_at, all_day)
-             VALUES (:title, :description, :location, :category, :start_at, :end_at, :all_day)
+            'INSERT INTO events (user_id, title, description, location, category, start_at, end_at, all_day)
+             VALUES (:user_id, :title, :description, :location, :category, :start_at, :end_at, :all_day)
              RETURNING *'
         );
         $stmt->execute([
+            'user_id' => $data['user_id'],
             'title' => $data['title'],
             'description' => $data['description'] ?? null,
             'location' => $data['location'] ?? null,
@@ -66,9 +68,9 @@ final class EventRepository
         return $stmt->fetch();
     }
 
-    public function update(int $id, array $data): ?array
+    public function update(int $id, int $userId, array $data): ?array
     {
-        $existing = $this->findById($id);
+        $existing = $this->findById($id, $userId);
         if ($existing === null) {
             return null;
         }
@@ -95,11 +97,12 @@ final class EventRepository
                  end_at = :end_at,
                  all_day = :all_day,
                  updated_at = NOW()
-             WHERE id = :id
+             WHERE id = :id AND user_id = :user_id
              RETURNING *'
         );
         $stmt->execute([
             'id' => $id,
+            'user_id' => $userId,
             ...$merged,
         ]);
 
@@ -107,10 +110,12 @@ final class EventRepository
         return $row === false ? null : $row;
     }
 
-    public function delete(int $id): bool
+    public function delete(int $id, int $userId): bool
     {
-        $stmt = $this->pdo->prepare('DELETE FROM events WHERE id = :id');
-        $stmt->execute(['id' => $id]);
+        $stmt = $this->pdo->prepare(
+            'DELETE FROM events WHERE id = :id AND user_id = :user_id'
+        );
+        $stmt->execute(['id' => $id, 'user_id' => $userId]);
         return $stmt->rowCount() > 0;
     }
 }
