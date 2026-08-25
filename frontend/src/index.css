@@ -14,3 +14,61 @@
 @theme inline {
   --font-sans: "Zen Maru Gothic", ui-sans-serif, system-ui, sans-serif;
 }
+
+/* FullCalendar は --fc-* しか見ないので、テーマの色をそのまま渡す */
+.sf-calendar {
+  --fc-page-bg-color: var(--color-base-100);
+  --fc-border-color: var(--color-base-300);
+  --fc-neutral-bg-color: var(--color-secondary);
+  --fc-neutral-text-color: var(--color-base-content);
+  --fc-today-bg-color: var(--color-secondary);
+  --fc-now-indicator-color: var(--color-primary);
+  --fc-event-bg-color: var(--color-primary);
+  --fc-event-border-color: var(--color-primary);
+  --fc-event-text-color: var(--color-primary-content);
+  --fc-highlight-color: var(--color-secondary);
+  --fc-non-business-color: var(--color-base-200);
+  --fc-more-link-text-color: var(--color-base-content);
+}
+
+.sf-calendar .fc,
+.sf-calendar .fc .fc-view-harness {
+  height: 100%;
+}
+
+.sf-calendar .fc a {
+  color: inherit;
+  text-decoration: none;
+}
+
+.sf-calendar .fc-theme-standard .fc-scrollgrid {
+  border-radius: var(--radius-box);
+  overflow: hidden;
+}
+
+.sf-calendar .fc .fc-col-header-cell-cushion {
+  display: flex;
+  justify-content: center;
+}
+
+.sf-calendar .fc-h-event,
+.sf-calendar .fc-daygrid-event,
+.sf-calendar .fc-daygrid-block-event {
+  border: none;
+  border-radius: 9999px;
+  margin: 1px 2px;
+  padding: 1px 6px;
+  overflow: hidden;
+  min-width: 0;
+}
+
+.sf-calendar .fc-event-main {
+  min-width: 0;
+  overflow: hidden;
+}
+
+.sf-calendar .fc-timegrid .fc-daygrid-day-top,
+.sf-calendar .fc-timegrid .fc-daygrid-day-number,
+.sf-calendar .fc-timegrid .fc-event-time {
+  display: none;
+}

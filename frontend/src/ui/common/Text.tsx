@@ -1,16 +1,22 @@
 import type { ReactNode } from 'react'
 
-// デザイン決まり次第変更
 const colorClass = {
   base: 'text-base-content',
   muted: 'text-base-content/60',
   primary: 'text-primary',
+  primaryContent: 'text-primary-content',
+  info: 'text-info-content',
+  error: 'text-error-content',
+  sunday: 'text-error-content',
+  saturday: 'text-info-content',
 } as const
 
 const sizeClass = {
+  xs: 'text-xs lg:text-sm',
   sm: 'text-sm lg:text-base',
   md: 'text-base lg:text-lg',
   lg: 'text-lg lg:text-xl',
+  xl: 'text-xl lg:text-2xl',
 } as const
 
 const weightClass = {
@@ -19,7 +25,10 @@ const weightClass = {
   bold: 'font-bold',
 } as const
 
+type TextTag = 'p' | 'span' | 'h1' | 'h2' | 'h3'
+
 type TextProps = {
+  as?: TextTag
   children: ReactNode
   color?: keyof typeof colorClass
   size?: keyof typeof sizeClass
@@ -28,6 +37,7 @@ type TextProps = {
 }
 
 export function Text({
+  as: Component = 'p',
   children,
   color = 'base',
   size = 'md',
@@ -35,7 +45,7 @@ export function Text({
   className = '',
 }: TextProps) {
   return (
-    <p
+    <Component
       className={[
         colorClass[color],
         sizeClass[size],
@@ -46,6 +56,6 @@ export function Text({
         .join(' ')}
     >
       {children}
-    </p>
+    </Component>
   )
 }
