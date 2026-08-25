@@ -1,32 +1,18 @@
-import { useState } from 'react';
+import { useAuth } from './contexts/AuthContext';
 import Login from './pages/Login';
 import Top from './pages/Top';
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
-import Register from './pages/Register';
-import Dashboard from './pages/Dashboard';
-import ProtectedRoute from './components/ProtectedRoute';
-import { AuthProvider } from './pages/AuthContext';
 
-export interface User {
-	id: number;
-	email: string;
-	name: string;
+export default function App() {
+	const { user, loading } = useAuth();
+
+	// 初期化中（ローカルストレージ確認中）のチラつき防止
+	if (loading) {
+		return (
+			<div className="flex min-h-screen items-center justify-center bg-base-200">
+				<span className="loading loading-spinner loading-lg text-primary"></span>
+			</div>
+		);
+	}
+
+	return user ? <Top /> : <Login />;
 }
-
-const App: React.FC = () => {
-	return (
-		<AuthProvider>
-			<BrowserRouter>
-				<Routes>
-					<Route path="/login" element={<Login />} />
-					<Route path="/register" element={<Register />} />
-					<Route element={<ProtectedRoute />}>
-						<Route path="/dashboard" element={<Dashboard />} />
-					</Route>
-				</Routes>
-			</BrowserRouter>
-		</AuthProvider>
-	);
-};
-
-export default App;

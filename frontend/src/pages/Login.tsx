@@ -1,47 +1,18 @@
 import { useState } from 'react';
+import { useAuth } from '../contexts/AuthContext';
 
-interface User {
-	id: number;
-	email: string;
-	userID: string;
-}
-
-interface LoginProps {
-	onLoginSuccess?: (user: User) => void;
-}
-
-export default function Login({ onLoginSuccess }: LoginProps) {
+export default function Login() {
+	const { loginWithSso } = useAuth();
 	const [loading, setLoading] = useState(false);
 	const [error, setError] = useState<string | null>(null);
 
-	const handleSsoLogin = async () => {
+	const handleLogin = async () => {
 		setLoading(true);
 		setError(null);
-
 		try {
-			const response = await fetch('http://localhost:8080/login.php', {
-				method: 'GET',
-				headers: {
-					'Content-Type': 'application/json',
-					// 開発環境用のダミーメールアドレス（PHP側のAuthContextで受け取る）
-					'X-Dev-User-Email': 'dev-user@example.com',
-				},
-			});
-
-			if (!response.ok) {
-				throw new Error(`認証エラーが発生しました: HTTP ${response.status}`);
-			}
-
-			const data = await response.json();
-			console.log('ログイン成功レスポンス:', data);
-
-			// 3. 親コンポーネント（App.tsxなど）へログイン成功を通知
-			if (onLoginSuccess && data.user) {
-				onLoginSuccess(data.user);
-			}
+			await loginWithSso();
 		} catch (err) {
-			console.error(err);
-			setError(err instanceof Error ? err.message : '通信に失敗しました');
+			setError(err instanceof Error ? err.message : 'ログイン処理中にエラーが発生しました');
 		} finally {
 			setLoading(false);
 		}
@@ -52,27 +23,25 @@ export default function Login({ onLoginSuccess }: LoginProps) {
 			<div className="card w-96 bg-base-100 shadow-xl border border-base-300">
 				<div className="card-body text-center">
 					<h2 className="card-title justify-center text-2xl font-bold">ScheduleFitter</h2>
-					<p className="text-sm text-base-content/70 mt-1">組織のSSOアカウントを使用してログイン</p>
+					<p className="text-sm text-base-content/70 mt-1">組織アカウント（SSO）でログイン</p>
 
-					{/* エラーメッセージ表示枠 */}
 					{error && (
 						<div className="alert alert-error mt-4 text-xs py-2">
 							<span>{error}</span>
 						</div>
 					)}
 
-					{/* SSO認証ボタン（仮置き） */}
 					<div className="card-actions mt-6 justify-center">
 						<button
 							type="button"
 							className="btn btn-primary w-full"
-							onClick={handleSsoLogin}
+							onClick={handleLogin}
 							disabled={loading}
 						>
 							{loading ? (
 								<span className="loading loading-spinner loading-sm"></span>
 							) : (
-								'SSOでログイン（認証連携）'
+								'SSOでログイン'
 							)}
 						</button>
 					</div>
