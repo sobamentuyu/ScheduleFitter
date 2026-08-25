@@ -1,10 +1,14 @@
 import type { CalendarEvent } from '@/types/event.ts'
+import { getUserId } from '@/api/userId.ts'
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8080'
 
 async function request<T>(path: string): Promise<T> {
   const res = await fetch(`${API_BASE}${path}`, {
-    headers: { 'Content-Type': 'application/json' },
+    headers: {
+      'Content-Type': 'application/json',
+      'X-User-Id': getUserId(),
+    },
   })
 
   if (!res.ok) {

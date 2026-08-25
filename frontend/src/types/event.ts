@@ -1,5 +1,6 @@
 export type CalendarEvent = {
   id: number
+  user_id: number
   title: string
   description: string | null
   location: string | null
