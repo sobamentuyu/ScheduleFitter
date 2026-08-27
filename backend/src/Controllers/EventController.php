@@ -17,7 +17,7 @@ final class EventController
 
     public function index(Request $request): void
     {
-        $userId = $this->requireUserId($request);
+        $userId = $this->requireUserId();
         if ($userId === null) {
             return;
         }
@@ -39,7 +39,7 @@ final class EventController
 
     public function show(Request $request, array $params): void
     {
-        $userId = $this->requireUserId($request);
+        $userId = $this->requireUserId();
         if ($userId === null) {
             return;
         }
@@ -61,7 +61,7 @@ final class EventController
 
     public function store(Request $request): void
     {
-        $userId = $this->requireUserId($request);
+        $userId = $this->requireUserId();
         if ($userId === null) {
             return;
         }
@@ -80,7 +80,7 @@ final class EventController
 
     public function update(Request $request, array $params): void
     {
-        $userId = $this->requireUserId($request);
+        $userId = $this->requireUserId();
         if ($userId === null) {
             return;
         }
@@ -108,7 +108,7 @@ final class EventController
 
     public function destroy(Request $request, array $params): void
     {
-        $userId = $this->requireUserId($request);
+        $userId = $this->requireUserId();
         if ($userId === null) {
             return;
         }
@@ -127,24 +127,15 @@ final class EventController
         Response::json(['ok' => true]);
     }
 
-    private function requireUserId(Request $request): ?int
+    private function requireUserId(): ?int
     {
-        $raw = $request->header('X-User-Id')
-            ?? $request->query['user_id']
-            ?? $request->body['user_id']
-            ?? null;
-
-        if ($raw === null || $raw === '') {
-            Response::error('ユーザーが指定されていません', 401);
-            return null;
+        $sessionUser = $_SESSION['user'] ?? null;
+        if (is_array($sessionUser) && isset($sessionUser['id']) && (int) $sessionUser['id'] >= 1) {
+            return (int) $sessionUser['id'];
         }
 
-        if (!ctype_digit((string) $raw) || (int) $raw < 1) {
-            Response::error('ユーザーIDが不正です', 400);
-            return null;
-        }
-
-        return (int) $raw;
+        Response::error('ログインが必要です', 401);
+        return null;
     }
 
     private function parseId(mixed $id): ?int
