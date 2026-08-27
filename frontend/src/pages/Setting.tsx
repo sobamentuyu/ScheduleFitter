@@ -1,23 +1,23 @@
-import { Link } from 'react-router-dom'
-import { Text } from '@/ui/common/Text.tsx'
+import { Link } from "react-router-dom";
+import { Text } from "@/ui/common/Text.tsx";
 
 export function Setting() {
   return (
-    <div className="mx-20 mt-6 flex flex-col justify-center gap-4">
+    <div className="flex flex-col justify-center items-center mt-6 mx-20 gap-4">
       <Link
         to="/setting/account"
-        className="flex items-center justify-center rounded-lg bg-secondary py-1"
+        className="flex justify-center items-center bg-secondary text-xl rounded-lg py-1 w-full sm:w-[1200px]"
         aria-label="アカウント設定"
       >
-        <Text size="xl">アカウント設定</Text>
+        アカウント設定
       </Link>
       <Link
         to="/setting/theme"
-        className="flex items-center justify-center rounded-lg bg-secondary py-1"
+        className="flex justify-center items-center bg-secondary text-xl rounded-lg py-1 w-full sm:w-[1200px]"
         aria-label="画面のテーマ"
       >
-        <Text size="xl">画面のテーマ</Text>
+        画面のテーマ
       </Link>
     </div>
-  )
+  );
 }
