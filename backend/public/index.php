@@ -1,6 +1,11 @@
 <?php
 require_once __DIR__ . '/../vendor/autoload.php';
 
+// Local development uses backend/.env. Docker-provided environment variables
+// take precedence because createUnsafeImmutable() does not overwrite them.
+// The unsafe variant is required because this application reads settings via getenv().
+Dotenv\Dotenv::createUnsafeImmutable(dirname(__DIR__))->safeLoad();
+
 use App\Config\Database;
 use App\Controllers\EventController;
 use App\Http\Request;
