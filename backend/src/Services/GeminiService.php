@@ -83,6 +83,11 @@ final class GeminiService
         return $text;
     }
 
+    public function model(): string
+    {
+        return $this->model;
+    }
+
     /** @param array<string, mixed> $payload @return array<string, mixed> */
     private function request(array $payload): array
     {
@@ -116,14 +121,28 @@ final class GeminiService
             CURLOPT_TIMEOUT => $this->timeoutSeconds,
         ]);
 
-        $body = curl_exec($curl);
-        $curlError = curl_error($curl);
-        $statusCode = (int) curl_getinfo($curl, CURLINFO_RESPONSE_CODE);
-        curl_close($curl);
+        $maxRetries = 3;
+        $retryCount = 0;
+
+        do {
+            $body = curl_exec($curl);
+            $curlError = curl_error($curl);
+            $statusCode = (int) curl_getinfo($curl, CURLINFO_RESPONSE_CODE);
+
+            if ($statusCode !== 429 || $retryCount >= $maxRetries) {
+                break;
+            }
+
+            $retryCount++;
+            sleep(5 * $retryCount);
+        } while (true);
 
         if ($body === false) {
+            curl_close($curl);
             throw new RuntimeException('Gemini API request failed: ' . $curlError);
         }
+
+        curl_close($curl);
 
         try {
             $decoded = json_decode($body, true, 512, JSON_THROW_ON_ERROR);
