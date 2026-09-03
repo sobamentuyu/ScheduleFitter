@@ -5,7 +5,7 @@ import { Calendar } from "@/ui/container/calendar/Calendar.tsx";
 import { PlusIcon } from "@phosphor-icons/react";
 import { MicrophoneIcon } from "@phosphor-icons/react";
 import { ImageIcon } from "@phosphor-icons/react";
-import type { ChatMessage } from "@/src/types/chat";
+import type { ChatMessage } from "@/types/chat";
 
 type Props = {
   isChatOpen: boolean;

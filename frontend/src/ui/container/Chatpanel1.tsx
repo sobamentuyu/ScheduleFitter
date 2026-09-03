@@ -5,7 +5,7 @@ import { Calendar } from "@/ui/container/calendar/Calendar.tsx";
 import { PlusIcon } from "@phosphor-icons/react";
 import { MicrophoneIcon } from "@phosphor-icons/react";
 import { ImageIcon } from "@phosphor-icons/react";
-import type { ChatMessage } from "@/src/types/chat";
+import type { ChatMessage } from "@/types/chat";
 
 type Props = {
   isChatOpen: boolean;
@@ -57,8 +57,8 @@ export function Chatpanel1({
             weight="light"
           />
         </button>
-        <div className="flex-1 overflow-y-auto p-4 color-secondary">
-          <div className="flex flex-col item-end gap-3">
+        <div className="flex-1 overflow-y-auto p-4 bg-secondary">
+          <div className="flex flex-col items-end gap-3">
             {messages.map((msg, index) => {
               const messageDate = new Date(msg.date);
 
@@ -70,7 +70,7 @@ export function Chatpanel1({
                 messageDate.toDateString() !== previousDate.toDateString();
 
               return (
-                <div key={index}>
+                <div key={index} className="w-full">
                   {/* 日付が変わったときだけ表示 */}
                   {isNewDay && (
                     <div className="text-center text-xs opacity-60 my-3">
@@ -81,8 +81,8 @@ export function Chatpanel1({
                       })}
                     </div>
                   )}
-                  <div className="chat chat-end">
-                    <div className="chat-bubble bg-base-100 w-fit max-w-[80%] whitespace-pre-wrap">
+                  <div className="chat chat-end w-full">
+                    <div className="chat-bubble bg-base-100 inline-block max-w-[80%] whitespace-pre-wrap break-words">
                       {msg.text}
                     </div>
                   </div>

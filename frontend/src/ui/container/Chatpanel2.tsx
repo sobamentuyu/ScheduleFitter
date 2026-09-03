@@ -5,7 +5,7 @@ import { Calendar } from "@/ui/container/calendar/Calendar.tsx";
 import { PlusIcon } from "@phosphor-icons/react";
 import { MicrophoneIcon } from "@phosphor-icons/react";
 import { ImageIcon } from "@phosphor-icons/react";
-import type { ChatMessage } from "@/src/types/chat";
+import type { ChatMessage } from "@/types/chat";
 type Props = {
   isChatOpen: boolean;
   setIsChatOpen: (v: boolean) => void;
@@ -80,7 +80,7 @@ export function Chatpanel2({
                       </div>
                     )}
                     <div className="chat chat-end">
-                      <div className="chat-bubble bg-base-100 w-fit max-w-[80%] whitespace-pre-wrap">
+                      <div className="chat-bubble bg-base-100 w-fit max-w-[80%] whitespace-pre-wrap break-words">
                         {msg.text}
                       </div>
                     </div>
