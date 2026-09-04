@@ -6,6 +6,7 @@ use App\Http\Response;
 use App\Http\ScheduleSuggestionPayload;
 use App\Services\GeminiService;
 use InvalidArgumentException;
+use App\Http\ScheduleSuggestionValidator;
 use RuntimeException;
 
 final class ScheduleSuggestionController
@@ -54,6 +55,7 @@ final class ScheduleSuggestionController
                 512,
                 JSON_THROW_ON_ERROR
             );
+            $suggestion = ScheduleSuggestionValidator::validate($suggestion);
             Response::json([
                 'suggestion' => $suggestion,
             ]);
