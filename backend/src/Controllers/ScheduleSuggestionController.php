@@ -30,15 +30,18 @@ final class ScheduleSuggestionController
             $systemInstruction .= "\n\nTrusted reference context:\n"
                 . 'reference_datetime: ' . $now->format(\DateTimeInterface::ATOM) . "\n"
                 . "timezone: Asia/Tokyo\n";
-            $suggestion = $this->gemini->generateText(
-                $payload['request'],
-                // Geminiへのシステム指示。order.txtに記載されている内容を使用する。
-                $systemInstruction,
+            $suggestion = json_decode(
+                $this->gemini->generateText(
+                    $payload['request'],
+                    $systemInstruction,
+                ),
+                true,
+                512,
+                JSON_THROW_ON_ERROR
             );
 
             Response::json([
                 'suggestion' => $suggestion,
-                'model' => $this->gemini->model(),
             ]);
         } catch (InvalidArgumentException $exception) {
             Response::error($exception->getMessage(), 422);
