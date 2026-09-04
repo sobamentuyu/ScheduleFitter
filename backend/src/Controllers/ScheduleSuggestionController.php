@@ -13,10 +13,25 @@ final class ScheduleSuggestionController
     public function __construct(
         private readonly GeminiService $gemini = new GeminiService(),
     ) {}
+    private function requireUserId(): ?int
+    {
+        $sessionUser = $_SESSION['user'] ?? null;
 
+        if (is_array($sessionUser) && isset($sessionUser['id']) && (int) $sessionUser['id'] >= 1) {
+            return (int) $sessionUser['id'];
+        }
+
+        Response::error('ログインが必要です', 401);
+        return null;
+    }
     public function create(Request $request): void
     {
         try {
+            $userId = $this->requireUserId();
+            if ($userId === null) {
+                return;
+            }
+
             $payload = ScheduleSuggestionPayload::parse($request->body);
             $instructionPath = dirname(__DIR__) . '/Prompts/order.txt';
             $systemInstruction = file_get_contents($instructionPath);
@@ -39,7 +54,6 @@ final class ScheduleSuggestionController
                 512,
                 JSON_THROW_ON_ERROR
             );
-
             Response::json([
                 'suggestion' => $suggestion,
             ]);
@@ -51,4 +65,5 @@ final class ScheduleSuggestionController
             ]);
         }
     }
+
 }
