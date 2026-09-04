@@ -12,7 +12,7 @@ import { Text } from "@/ui/common/Text.tsx";
 
 export function Chatpanel() {
   const chat = useChat();
-  const listRef = useChatScroll(chat.messages);
+  const listRef = useChatScroll(chat.messages, chat.isSending);
   const { probeRef, isMultiline } = useMultilineInput(chat.message);
 
   return (
@@ -41,7 +41,7 @@ export function Chatpanel() {
         </div>
 
         <div ref={listRef} className="min-h-0 flex-1 overflow-y-auto p-4">
-          <div className="flex flex-col items-end gap-3">
+          <div className="flex flex-col gap-3" aria-busy={chat.isSending}>
             {chat.messages.map((msg, index) => {
               const messageDate = new Date(msg.createdAt);
               const previous = index > 0 ? chat.messages[index - 1] : undefined;
@@ -53,7 +53,7 @@ export function Chatpanel() {
                 messageDate.toDateString() !== previousDate.toDateString();
 
               return (
-                <div key={msg.createdAt} className="w-full">
+                <div key={msg.id} className="w-full">
                   {isNewDay && (
                     <Text
                       as="p"
@@ -68,7 +68,11 @@ export function Chatpanel() {
                       })}
                     </Text>
                   )}
-                  <div className="chat chat-end w-full">
+                  <div
+                    className={`chat w-full ${
+                      msg.role === "user" ? "chat-end" : "chat-start"
+                    }`}
+                  >
                     <div className="chat-bubble inline-block max-w-[80%] whitespace-pre-wrap break-words bg-base-100">
                       {msg.text}
                     </div>
@@ -76,6 +80,13 @@ export function Chatpanel() {
                 </div>
               );
             })}
+            {chat.isSending && (
+              <div className="chat chat-start w-full">
+                <div className="chat-bubble inline-block max-w-[80%] bg-base-100">
+                  予定を読み取っています…
+                </div>
+              </div>
+            )}
           </div>
         </div>
 
@@ -142,8 +153,8 @@ export function Chatpanel() {
           <button
             type="button"
             aria-label="送信"
-            onClick={chat.sendMessage}
-            disabled={chat.message.trim() === ""}
+            onClick={() => void chat.sendMessage()}
+            disabled={chat.message.trim() === "" || chat.isSending}
             className="btn btn-circle btn-lg bg-[var(--color-chat)]"
           >
             <ArrowUpIcon
