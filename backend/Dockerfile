@@ -3,9 +3,10 @@ FROM php:8.3-apache
 # PostgreSQL接続用ライブラリおよびツール類のインストール
 RUN apt-get update && apt-get install -y \
     libpq-dev \
+    libcurl4-openssl-dev \
     unzip \
     git \
-    && docker-php-ext-install pdo pdo_pgsql
+    && docker-php-ext-install pdo pdo_pgsql curl
 
 # ドキュメントルートを public/ に変更
 ENV APACHE_DOCUMENT_ROOT /var/www/html/public

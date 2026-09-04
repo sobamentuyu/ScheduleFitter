@@ -1,8 +1,14 @@
 <?php
 require_once __DIR__ . '/../vendor/autoload.php';
 
+// Local development uses backend/.env. Docker-provided environment variables
+// take precedence because createUnsafeImmutable() does not overwrite them.
+// The unsafe variant is required because this application reads settings via getenv().
+Dotenv\Dotenv::createUnsafeImmutable(dirname(__DIR__))->safeLoad();
+
 use App\Config\Database;
 use App\Controllers\EventController;
+use App\Controllers\ScheduleSuggestionController;
 use App\Http\Request;
 use App\Http\Response;
 use App\Router;
@@ -31,6 +37,7 @@ if (session_status() === PHP_SESSION_NONE) {
 $request = Request::fromGlobals();
 $router = new Router();
 $events = new EventController();
+$scheduleSuggestions = new ScheduleSuggestionController();
 
 $router->get('/', static function () {
     $dbStatus = 'ok';
@@ -51,7 +58,9 @@ $router->get('/', static function () {
     ]);
 });
 
-$router->group('/api', function (Router $api) use ($events) {
+$router->group('/api', function (Router $api) use ($events, $scheduleSuggestions) {
+    $api->post('/schedule-suggestions', [$scheduleSuggestions, 'create']);
+
     $api->group('/events', function (Router $r) use ($events) {
         $r->get('/', [$events, 'index']);
         $r->get('/{id}', [$events, 'show']);
