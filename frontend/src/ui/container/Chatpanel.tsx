@@ -8,12 +8,14 @@ import {
 import { useChat } from "@/hooks/useChat.ts";
 import { useChatScroll } from "@/hooks/useChatScroll.ts";
 import { useMultilineInput } from "@/hooks/useMultilineInput.ts";
+import { useVoiceInput } from "@/hooks/useVoiceInput.ts";
 import { Text } from "@/ui/common/Text.tsx";
 
 export function Chatpanel() {
   const chat = useChat();
   const listRef = useChatScroll(chat.messages, chat.isSending);
   const { probeRef, isMultiline } = useMultilineInput(chat.message);
+  const voice = useVoiceInput(chat.message, chat.setMessage, chat.isChatOpen);
 
   return (
     <>
@@ -128,12 +130,20 @@ export function Chatpanel() {
             >
               <button
                 type="button"
-                aria-label="音声入力"
+                aria-label={
+                  voice.listening ? "音声入力を停止" : "音声入力"
+                }
+                aria-pressed={voice.listening}
+                disabled={
+                  !voice.browserSupportsSpeechRecognition ||
+                  !voice.isMicrophoneAvailable
+                }
+                onClick={voice.toggleListening}
                 className="btn btn-circle btn-ghost btn-xs"
               >
                 <MicrophoneIcon
                   size={18}
-                  weight="light"
+                  weight={voice.listening ? "fill" : "light"}
                   color="var(--color-primary-content)"
                 />
               </button>
@@ -153,8 +163,13 @@ export function Chatpanel() {
           <button
             type="button"
             aria-label="送信"
-            onClick={() => void chat.sendMessage()}
-            disabled={chat.message.trim() === "" || chat.isSending}
+            onClick={() => {
+              voice.endSession();
+              void chat.sendMessage();
+            }}
+            disabled={
+              chat.message.trim() === "" || chat.isSending || voice.listening
+            }
             className="btn btn-circle btn-lg bg-[var(--color-chat)]"
           >
             <ArrowUpIcon
