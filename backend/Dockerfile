@@ -23,6 +23,11 @@ RUN a2enmod rewrite headers \
       > /etc/apache2/conf-available/allow-override.conf \
     && a2enconf allow-override
 
+RUN printf '%s\n' \
+  'upload_max_filesize = 10M' \
+  'post_max_size = 12M' \
+  > /usr/local/etc/php/conf.d/uploads.ini
+
 # Composerの導入
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 

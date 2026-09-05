@@ -41,10 +41,32 @@ final class GeminiService
             throw new RuntimeException('Gemini prompt must not be empty.');
         }
 
+        return $this->generateFromParts(
+            [['text' => $prompt]],
+            $systemInstruction,
+            $generationConfig,
+        );
+    }
+
+    /**
+     * Sends multimodal parts (text and/or inlineData) and returns the generated text.
+     *
+     * @param list<array<string, mixed>> $parts Gemini content parts.
+     * @param array<string, mixed> $generationConfig Gemini generationConfig values.
+     */
+    public function generateFromParts(
+        array $parts,
+        ?string $systemInstruction = null,
+        array $generationConfig = [],
+    ): string {
+        if ($parts === []) {
+            throw new RuntimeException('Gemini parts must not be empty.');
+        }
+
         $payload = [
             'contents' => [[
                 'role' => 'user',
-                'parts' => [['text' => $prompt]],
+                'parts' => $parts,
             ]],
         ];
 
@@ -59,9 +81,9 @@ final class GeminiService
         }
 
         $response = $this->request($payload);
-        $parts = $response['candidates'][0]['content']['parts'] ?? null;
+        $responseParts = $response['candidates'][0]['content']['parts'] ?? null;
 
-        if (!is_array($parts)) {
+        if (!is_array($responseParts)) {
             $reason = $response['promptFeedback']['blockReason'] ?? null;
             if (is_string($reason)) {
                 throw new RuntimeException("Gemini request was blocked: {$reason}.");
@@ -70,7 +92,7 @@ final class GeminiService
         }
 
         $text = '';
-        foreach ($parts as $part) {
+        foreach ($responseParts as $part) {
             if (is_array($part) && isset($part['text']) && is_string($part['text'])) {
                 $text .= $part['text'];
             }

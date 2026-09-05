@@ -7,6 +7,7 @@ final class Request
      * @param array<string, mixed> $query
      * @param array<string, mixed> $body
      * @param array<string, string> $headers
+     * @param array<string, mixed> $files
      */
     public function __construct(
         public readonly string $method,
@@ -14,6 +15,7 @@ final class Request
         public readonly array $query,
         public readonly array $body,
         public readonly array $headers = [],
+        public readonly array $files = [],
     ) {}
 
     public static function fromGlobals(): self
@@ -23,16 +25,24 @@ final class Request
         $path = parse_url($uri, PHP_URL_PATH) ?: '/';
         $path = rtrim($path, '/') ?: '/';
 
-        $raw = file_get_contents('php://input') ?: '';
+        $contentType = strtolower((string) ($_SERVER['CONTENT_TYPE'] ?? ''));
         $body = [];
-        if ($raw !== '') {
-            $decoded = json_decode($raw, true);
-            if (is_array($decoded)) {
-                $body = $decoded;
+        $files = [];
+
+        if (str_contains($contentType, 'multipart/form-data')) {
+            $body = is_array($_POST) ? $_POST : [];
+            $files = is_array($_FILES) ? $_FILES : [];
+        } else {
+            $raw = file_get_contents('php://input') ?: '';
+            if ($raw !== '') {
+                $decoded = json_decode($raw, true);
+                if (is_array($decoded)) {
+                    $body = $decoded;
+                }
             }
         }
 
-        return new self($method, $path, $_GET, $body, self::headersFromGlobals());
+        return new self($method, $path, $_GET, $body, self::headersFromGlobals(), $files);
     }
 
     public function header(string $name): ?string
