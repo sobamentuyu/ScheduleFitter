@@ -15,12 +15,13 @@ export type CalendarEvent = {
   allDay: boolean
 }
 
-export type CreateEventPayload = {
+export type EventDetail = {
+  id: string
   title: string
+  start: Date | null
+  end: Date | null
+  allDay: boolean
   description: string | null
   location: string | null
   category: string | null
-  start_at: string
-  end_at: string
-  all_day: boolean
 }

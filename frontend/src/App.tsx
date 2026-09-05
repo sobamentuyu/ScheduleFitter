@@ -1,11 +1,11 @@
 import { BrowserRouter, Route, Routes } from "react-router-dom";
-import { useAuth } from "./contexts/AuthContext";
+import { useAuth } from "@/hooks/useAuth.ts";
 import { Header } from "@/ui/container/Header.tsx";
 import { Account } from "@/pages/Account.tsx";
 import { Setting } from "@/pages/Setting.tsx";
 import { Theme } from "@/pages/Theme.tsx";
-import { Top } from "@/pages/Top";
-import Login from "./pages/Login";
+import { Top } from "@/pages/Top.tsx";
+import Login from "./pages/Login.tsx";
 
 export default function App() {
   const { user, loading } = useAuth();
