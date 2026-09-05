@@ -14,8 +14,7 @@ final class ScheduleSuggestionValidator
     ];
 
     private const TOP_LEVEL_KEYS = [
-        'event',
-        'missing_fields',
+        'events',
     ];
 
     private const EVENT_KEYS = [
@@ -26,6 +25,7 @@ final class ScheduleSuggestionValidator
         'start_at',
         'end_at',
         'all_day',
+        'missing_fields',
     ];
 
     public static function validate(mixed $data): array
@@ -36,74 +36,115 @@ final class ScheduleSuggestionValidator
             );
         }
 
+        $data = self::normalize($data);
+        unset($data['status']);
+
         self::validateKeys(
             $data,
             self::TOP_LEVEL_KEYS,
             'response'
         );
 
-        if (!is_array($data['event'])) {
+        if (!array_is_list($data['events'])) {
             throw new UnexpectedValueException(
-                'The event must be an array.'
+                'events must be a list.'
             );
         }
 
-        self::validateKeys(
-            $data['event'],
-            self::EVENT_KEYS,
-            'event'
-        );
+        $events = [];
+        $allReady = $data['events'] !== [];
 
-        if (!is_array($data['missing_fields'])) {
-            throw new UnexpectedValueException(
-                'missing_fields must be an array.'
+        foreach ($data['events'] as $index => $event) {
+            if (!is_array($event)) {
+                throw new UnexpectedValueException(
+                    "events[{$index}] must be an object."
+                );
+            }
+
+            if (!array_key_exists('missing_fields', $event)) {
+                $event['missing_fields'] = [];
+            }
+
+            self::validateKeys(
+                $event,
+                self::EVENT_KEYS,
+                "events[{$index}]"
             );
+            self::validateEvent($event, "events[{$index}]");
+            self::validateMissingFields($event['missing_fields'], "events[{$index}].missing_fields");
+            self::validateConsistency($event, "events[{$index}]");
+
+            $hasRequiredFields = trim($event['title']) !== ''
+                && $event['start_at'] !== null
+                && $event['end_at'] !== null;
+
+            if (!$hasRequiredFields) {
+                $allReady = false;
+            }
+
+            $events[] = $event;
         }
 
-        self::validateEvent($data['event']);
-        self::validateMissingFields($data['missing_fields']);
-        self::validateConsistency($data['event'], $data['missing_fields']);
-
-        $hasRequiredFields = trim($data['event']['title']) !== ''
-            && $data['event']['start_at'] !== null
-            && $data['event']['end_at'] !== null;
-
-        $data['status'] = $hasRequiredFields
-            ? 'ready'
-            : 'needs_clarification';
-
-        return $data;
+        return [
+            'status' => $allReady ? 'ready' : 'needs_clarification',
+            'events' => $events,
+        ];
     }
 
-    private static function validateEvent(array $event): void
+    /**
+     * @param array<string, mixed> $data
+     * @return array<string, mixed>
+     */
+    private static function normalize(array $data): array
+    {
+        if (isset($data['events'])) {
+            return $data;
+        }
+
+        if (!isset($data['event']) || !is_array($data['event'])) {
+            return $data;
+        }
+
+        $event = $data['event'];
+        if (!array_key_exists('missing_fields', $event) && isset($data['missing_fields'])) {
+            $event['missing_fields'] = $data['missing_fields'];
+        }
+
+        return ['events' => [$event]];
+    }
+
+    /**
+     * @param array<string, mixed> $event
+     */
+    private static function validateEvent(array $event, string $target): void
     {
         if (!is_string($event['title'])) {
-            throw new UnexpectedValueException('event.title must be a string.');
+            throw new UnexpectedValueException("{$target}.title must be a string.");
         }
 
         foreach (['description', 'location', 'category'] as $field) {
             if ($event[$field] !== null && !is_string($event[$field])) {
                 throw new UnexpectedValueException(
-                    "event.{$field} must be a string or null."
+                    "{$target}.{$field} must be a string or null."
                 );
             }
         }
 
         foreach (['start_at', 'end_at'] as $field) {
             if ($event[$field] !== null) {
-                self::validateDateTime($event[$field], "event.{$field}");
+                self::validateDateTime($event[$field], "{$target}.{$field}");
             }
         }
 
         if (!is_bool($event['all_day'])) {
-            throw new UnexpectedValueException('event.all_day must be a boolean.');
+            throw new UnexpectedValueException("{$target}.all_day must be a boolean.");
         }
 
         if ($event['start_at'] !== null && $event['end_at'] !== null
             && new DateTimeImmutable($event['end_at']) < new DateTimeImmutable($event['start_at'])
         ) {
             throw new UnexpectedValueException(
-                'event.end_at must not be earlier than event.start_at.'
+                "{$target}.end_at must not be earlier than {$target}.start_at."
             );
         }
     }
@@ -131,35 +172,35 @@ final class ScheduleSuggestionValidator
         }
     }
 
-    private static function validateMissingFields(array $missingFields): void
+    private static function validateMissingFields(array $missingFields, string $target): void
     {
         foreach ($missingFields as $index => $field) {
             if (!is_string($field) || trim($field) === '') {
                 throw new UnexpectedValueException(
-                    "missing_fields[{$index}] must be a non-empty string."
+                    "{$target}[{$index}] must be a non-empty string."
                 );
             }
 
             if (!in_array($field, self::ALLOWED_MISSING_FIELDS, true)) {
                 throw new UnexpectedValueException(
-                    "missing_fields[{$index}] contains an unsupported field."
+                    "{$target}[{$index}] contains an unsupported field."
                 );
             }
         }
 
         if (count(array_unique($missingFields)) !== count($missingFields)) {
-            throw new UnexpectedValueException('missing_fields must not contain duplicates.');
+            throw new UnexpectedValueException("{$target} must not contain duplicates.");
         }
     }
 
-    private static function validateConsistency(array $event, array $missingFields): void
+    private static function validateConsistency(array $event, string $target): void
     {
+        $missingFields = $event['missing_fields'];
         $hasMissing = static fn (string $field): bool => in_array($field, $missingFields, true);
-        $titleMissing = trim($event['title']) === '';
 
-        if ($titleMissing !== $hasMissing('title')) {
+        if ((trim($event['title']) === '') !== $hasMissing('title')) {
             throw new UnexpectedValueException(
-                'missing_fields.title must match whether event.title is empty.'
+                "{$target}.missing_fields must match whether title is empty."
             );
         }
 
@@ -168,7 +209,7 @@ final class ScheduleSuggestionValidator
                 || $hasMissing('start_at') || $hasMissing('end_at')
             ) {
                 throw new UnexpectedValueException(
-                    'A missing date requires null datetimes without start_at or end_at markers.'
+                    "{$target}: a missing date requires null datetimes without time markers."
                 );
             }
             return;
@@ -177,12 +218,15 @@ final class ScheduleSuggestionValidator
         foreach (['start_at', 'end_at'] as $field) {
             if (($event[$field] === null) !== $hasMissing($field)) {
                 throw new UnexpectedValueException(
-                    "missing_fields.{$field} must match whether event.{$field} is null."
+                    "{$target}.missing_fields must match whether {$field} is null."
                 );
             }
         }
     }
 
+    /**
+     * @param list<string> $expectedKeys
+     */
     private static function validateKeys(
         array $data,
         array $expectedKeys,

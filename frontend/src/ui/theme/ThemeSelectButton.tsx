@@ -1,0 +1,30 @@
+import type { ThemeName } from "@/constants/theme";
+import { Text } from "@/ui/common/Text.tsx";
+type Props = {
+  color: string;
+  selected: boolean;
+  onClick: () => void;
+  theme: ThemeName;
+};
+
+export const ThemeSelectButton = (props: Props) => {
+  return (
+    <button
+      onClick={props.onClick}
+      className={`flex items-center bg-secondary text-primary-content rounded-lg w-full max-w-[1200px] py-1 hover:bg-primary ${props.selected ? "border-2 border-primary" : "border-2 border-transparent"}`}
+    >
+      <span
+        data-theme={props.theme}
+        className="inline-block w-4 h-4 rounded-full ring-2 ring-white ml-3"
+        style={{ backgroundColor: "var(--color-chat)" }}
+      ></span>
+      <Text
+        size="xl"
+        weight="medium"
+        className="ml-2 text-primary-content ml-3"
+      >
+        {props.color}
+      </Text>
+    </button>
+  );
+};
