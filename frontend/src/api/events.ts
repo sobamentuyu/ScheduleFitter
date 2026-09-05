@@ -1,4 +1,5 @@
-import type { CalendarEvent, CreateEventPayload } from '@/types/event.ts'
+import type { CalendarEvent, CreateEventPayload } from "@/types/event"
+
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8080'
 
