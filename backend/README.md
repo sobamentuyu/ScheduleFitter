@@ -50,6 +50,22 @@ Docker Compose 利用時のデータベース接続値は `docker-compose.yml` �
 
 Docker を使わずに起動する場合は、PHP 8.3、`pdo_pgsql`、`curl`、Composer、および PostgreSQL を用意し、`Backend` ディレクトリで `composer install` を実行してください。
 
+## テスト
+
+予定候補のバリデーションテストは、リポジトリのルートから次のコマンドで実行できます。
+
+```bash
+docker compose run --rm --no-deps backend composer test
+```
+
+Dockerを使わない場合は、`backend` ディレクトリで実行します。
+
+```bash
+composer test
+```
+
+このテストでは、Geminiが返す予定候補について、必須キー、各値の型、ISO 8601日時、開始・終了日時の前後関係、ステータスと不足項目の整合性を検証します。
+
 ## 認証
 
 予定 API はログイン済みのセッションを必要とします。開発環境では `POST /login.php` に `X-Dev-User-Email` ヘッダーを付けてログインします。初回ログイン時は該当メールアドレスのユーザーが自動作成されます。
@@ -133,8 +149,8 @@ AI に対する抽出ルールを定義したテキストファイルです。
     `GeminiService` が `systemInstruction`（役割と基準日時）と `contents`（ユーザーの入力テキスト）を JSON ペイロードとして構築し、Gemini API へ POST リクエストを送信します。
 4.  **リトライロジック**:
     API がレート制限（HTTP 429）を返した場合、最大 3 回まで、待機時間を 5 秒、10 秒、15 秒と増やしながら再試行します。
-5.  **構造化データの抽出**:
-    Gemini から返されたテキスト（JSON 文字列）をそのまま `suggestion` フィールドに入れてクライアントに返します。フロントエンドはこの文字列を `JSON.parse()` して利用します。
+5.  **構造化データの検証**:
+    Gemini から返されたJSONをデコードし、必須キー、各値の型、日時形式、ステータスと不足項目の整合性を検証してから `suggestion` フィールドに入れて返します。
 
 ## エラーハンドリング
 
@@ -159,11 +175,21 @@ Gemini が生成した提案を含む JSON オブジェクトを返します。
 
 ```json
 {
-  "suggestion": "{\n  \"status\": \"ready\",\n  \"event\": {\n    \"title\": \"打ち合わせ\",\n    \"description\": null,\n    \"location\": \"渋谷\",\n    \"category\": null,\n    \"start_at\": \"2024-05-20T15:00:00+09:00\",\n    \"end_at\": null,\n    \"all_day\": false\n  },\n  \"missing_fields\": [\"end_at\"]\n}",
-  "model": "gemini-3.6-flash"
+  "suggestion": {
+    "status": "needs_clarification",
+    "event": {
+      "title": "打ち合わせ",
+      "description": null,
+      "location": "渋谷",
+      "category": null,
+      "start_at": "2026-09-06T15:00:00+09:00",
+      "end_at": null,
+      "all_day": false
+    },
+    "missing_fields": ["end_at"]
+  }
 }
 ```
-*注: `suggestion` フィールドには、Gemini から返された文字列形式の JSON オブジェクトが含まれます。*
 
 ## データスキーマ
 AI は `suggestion` 文字列内に以下の構造を返すように指示されています。
@@ -172,7 +198,7 @@ AI は `suggestion` 文字列内に以下の構造を返すように指示され
 | :--- | :--- | :--- |
 | `status` | `string` | `ready` または `needs_clarification`。 |
 | `event.title` | `string` | イベントのタイトル。 |
-| `event.start_at` | `string` | ISO 8601 形式の日時、または `null`。 |
-| `event.end_at` | `string` | ISO 8601 形式の日時、または `null`。 |
+| `event.start_at` | `string \| null` | ISO 8601 形式の日時、または `null`。 |
+| `event.end_at` | `string \| null` | ISO 8601 形式の日時、または `null`。 |
 | `event.all_day` | `boolean` | 終日イベントの場合は `true`。 |
 | `missing_fields` | `string[]` | 不足している情報のリスト（例: `date`, `start_at`）。 |
