@@ -22,7 +22,7 @@ final class GeminiService
         ?int $timeoutSeconds = null,
     ) {
         $this->apiKey = trim($apiKey ?? (getenv('GEMINI_API_KEY') ?: ''));
-        $this->model = trim($model ?? (getenv('GEMINI_MODEL') ?: 'gemini-2.5-flash'));
+        $this->model = trim($model ?? (getenv('GEMINI_MODEL') ?: 'gemini-3.6-flash'));
         $this->timeoutSeconds = $timeoutSeconds ?? $this->readTimeout();
     }
 
