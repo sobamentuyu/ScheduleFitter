@@ -1,8 +1,9 @@
 import { useEffect, useRef, useState } from 'react'
 import FullCalendar from '@fullcalendar/react'
-import type { DatesSetArg } from '@fullcalendar/core'
+import type { DatesSetArg, EventClickArg } from '@fullcalendar/core'
 import { useCalendarEvents } from '@/hooks/useCalendarEvents.ts'
 import { VIEWS, type CalendarView } from '@/constants/calendarViews.ts'
+import type { EventDetail } from '@/types/event.ts'
 
 export function useCalendar(revision = 0) {
   const { error, loadEvents } = useCalendarEvents()
@@ -10,6 +11,7 @@ export function useCalendar(revision = 0) {
   const wrapRef = useRef<HTMLDivElement>(null)
   const [title, setTitle] = useState('')
   const [currentView, setCurrentView] = useState<CalendarView>('dayGridMonth')
+  const [selectedEvent, setSelectedEvent] = useState<EventDetail | null>(null)
 
   const api = () => calendarRef.current?.getApi()
 
@@ -34,6 +36,21 @@ export function useCalendar(revision = 0) {
     }
   }
 
+  const handleEventClick = (arg: EventClickArg) => {
+    arg.jsEvent.preventDefault()
+    const { event } = arg
+    setSelectedEvent({
+      id: event.id,
+      title: event.title,
+      start: event.start,
+      end: event.end,
+      allDay: event.allDay,
+      description: event.extendedProps.description ?? null,
+      location: event.extendedProps.location ?? null,
+      category: event.extendedProps.category ?? null,
+    })
+  }
+
   return {
     error,
     loadEvents,
@@ -41,7 +58,10 @@ export function useCalendar(revision = 0) {
     wrapRef,
     title,
     currentView,
+    selectedEvent,
     handleDatesSet,
+    handleEventClick,
+    closeEventDetail: () => setSelectedEvent(null),
     onPrev: () => api()?.prev(),
     onNext: () => api()?.next(),
     onToday: () => api()?.today(),
