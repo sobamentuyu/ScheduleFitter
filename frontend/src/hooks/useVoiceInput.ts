@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useCallback, useEffect, useRef } from "react";
 import SpeechRecognition, {
   useSpeechRecognition,
 } from "react-speech-recognition";
@@ -12,8 +12,11 @@ function joinSpokenText(prefix: string, spoken: string) {
 export function useVoiceInput(
   value: string,
   onChange: (value: string) => void,
+  enabled = true,
 ) {
   const prefixRef = useRef("");
+  const sessionActiveRef = useRef(false);
+
   const {
     transcript,
     listening,
@@ -24,17 +27,25 @@ export function useVoiceInput(
   } = useSpeechRecognition();
 
   useEffect(() => {
-    if (!listening) return;
+    if (!sessionActiveRef.current) return;
+    if (!listening && !transcript) return;
     onChange(joinSpokenText(prefixRef.current, transcript));
   }, [listening, transcript, onChange]);
 
-  const stopListening = () => {
-    if (!listening) return;
-    onChange(joinSpokenText(prefixRef.current, transcript));
+  const stopListening = useCallback(() => {
+    if (!sessionActiveRef.current && !listening) return;
+    if (transcript) {
+      onChange(joinSpokenText(prefixRef.current, transcript));
+    }
     void SpeechRecognition.stopListening();
-  };
+  }, [listening, onChange, transcript]);
 
-  const toggleListening = () => {
+  const endSession = useCallback(() => {
+    sessionActiveRef.current = false;
+    resetTranscript();
+  }, [resetTranscript]);
+
+  const toggleListening = useCallback(() => {
     if (!browserSupportsSpeechRecognition) return;
 
     if (listening) {
@@ -43,12 +54,33 @@ export function useVoiceInput(
     }
 
     prefixRef.current = value.trim();
+    sessionActiveRef.current = true;
     resetTranscript();
     void SpeechRecognition.startListening({
       language: "ja-JP",
       continuous: browserSupportsContinuousListening,
     });
-  };
+  }, [
+    browserSupportsContinuousListening,
+    browserSupportsSpeechRecognition,
+    listening,
+    resetTranscript,
+    stopListening,
+    value,
+  ]);
+
+  useEffect(() => {
+    if (!enabled) {
+      stopListening();
+    }
+  }, [enabled, stopListening]);
+
+  useEffect(() => {
+    return () => {
+      sessionActiveRef.current = false;
+      void SpeechRecognition.abortListening();
+    };
+  }, []);
 
   return {
     listening,
@@ -56,5 +88,6 @@ export function useVoiceInput(
     isMicrophoneAvailable,
     toggleListening,
     stopListening,
+    endSession,
   };
 }

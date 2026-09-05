@@ -15,7 +15,7 @@ export function Chatpanel() {
   const chat = useChat();
   const listRef = useChatScroll(chat.messages, chat.isSending);
   const { probeRef, isMultiline } = useMultilineInput(chat.message);
-  const voice = useVoiceInput(chat.message, chat.setMessage);
+  const voice = useVoiceInput(chat.message, chat.setMessage, chat.isChatOpen);
 
   return (
     <>
@@ -164,10 +164,12 @@ export function Chatpanel() {
             type="button"
             aria-label="送信"
             onClick={() => {
-              voice.stopListening();
+              voice.endSession();
               void chat.sendMessage();
             }}
-            disabled={chat.message.trim() === "" || chat.isSending}
+            disabled={
+              chat.message.trim() === "" || chat.isSending || voice.listening
+            }
             className="btn btn-circle btn-lg bg-[var(--color-chat)]"
           >
             <ArrowUpIcon
