@@ -6,6 +6,13 @@ use UnexpectedValueException;
 
 final class ScheduleSuggestionValidator
 {
+    private const ALLOWED_MISSING_FIELDS = [
+        'title',
+        'date',
+        'start_at',
+        'end_at',
+    ];
+
     private const TOP_LEVEL_KEYS = [
         'events',
     ];
@@ -45,7 +52,6 @@ final class ScheduleSuggestionValidator
         }
 
         $events = [];
-        $allReady = $data['events'] !== [];
 
         foreach ($data['events'] as $index => $event) {
             if (!is_array($event)) {
@@ -53,6 +59,8 @@ final class ScheduleSuggestionValidator
                     "events[{$index}] must be an object."
                 );
             }
+
+            unset($event['status']);
 
             if (!array_key_exists('missing_fields', $event)) {
                 $event['missing_fields'] = [];
@@ -65,20 +73,17 @@ final class ScheduleSuggestionValidator
             );
             self::validateEvent($event, "events[{$index}]");
             self::validateMissingFields($event['missing_fields'], "events[{$index}].missing_fields");
+            self::validateConsistency($event, "events[{$index}]");
 
             $hasRequiredFields = trim($event['title']) !== ''
                 && $event['start_at'] !== null
                 && $event['end_at'] !== null;
 
-            if (!$hasRequiredFields) {
-                $allReady = false;
-            }
-
+            $event['status'] = $hasRequiredFields ? 'ready' : 'needs_clarification';
             $events[] = $event;
         }
 
         return [
-            'status' => $allReady ? 'ready' : 'needs_clarification',
             'events' => $events,
         ];
     }
@@ -172,10 +177,47 @@ final class ScheduleSuggestionValidator
                     "{$target}[{$index}] must be a non-empty string."
                 );
             }
+
+            if (!in_array($field, self::ALLOWED_MISSING_FIELDS, true)) {
+                throw new UnexpectedValueException(
+                    "{$target}[{$index}] contains an unsupported field."
+                );
+            }
         }
 
         if (count(array_unique($missingFields)) !== count($missingFields)) {
             throw new UnexpectedValueException("{$target} must not contain duplicates.");
+        }
+    }
+
+    private static function validateConsistency(array $event, string $target): void
+    {
+        $missingFields = $event['missing_fields'];
+        $hasMissing = static fn (string $field): bool => in_array($field, $missingFields, true);
+
+        if ((trim($event['title']) === '') !== $hasMissing('title')) {
+            throw new UnexpectedValueException(
+                "{$target}.missing_fields must match whether title is empty."
+            );
+        }
+
+        if ($hasMissing('date')) {
+            if ($event['start_at'] !== null || $event['end_at'] !== null
+                || $hasMissing('start_at') || $hasMissing('end_at')
+            ) {
+                throw new UnexpectedValueException(
+                    "{$target}: a missing date requires null datetimes without time markers."
+                );
+            }
+            return;
+        }
+
+        foreach (['start_at', 'end_at'] as $field) {
+            if (($event[$field] === null) !== $hasMissing($field)) {
+                throw new UnexpectedValueException(
+                    "{$target}.missing_fields must match whether {$field} is null."
+                );
+            }
         }
     }
 
