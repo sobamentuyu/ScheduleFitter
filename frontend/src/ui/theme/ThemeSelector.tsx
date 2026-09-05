@@ -2,7 +2,8 @@ import type { ThemeName } from "@/constants/theme";
 import { ThemeSelectButton } from "@/ui/theme/ThemeSelectButton.tsx";
 import { useTheme } from "@/hooks/useTheme.ts";
 import { themeNames } from "@/constants/theme.ts";
-export const labels: Record<ThemeName, string> = {
+
+const labels: Record<ThemeName, string> = {
   blue: "Blue",
   green: "Green",
   red: "Red",
@@ -14,7 +15,7 @@ export const labels: Record<ThemeName, string> = {
 export function ThemeSelector() {
   const { theme, setTheme } = useTheme();
   return (
-    <div className="flex flex-col justify-center items-center mt-6 mx-20 gap-4 ">
+    <div className="flex flex-col justify-center items-center gap-4 mt-6 mx-20 w-full max-w-[1200px]">
       {themeNames.map((themeName) => (
         <ThemeSelectButton
           key={themeName}
