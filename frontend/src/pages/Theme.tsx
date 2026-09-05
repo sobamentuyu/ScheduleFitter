@@ -1,4 +1,5 @@
-import { ThemeSelector } from "@/ui/theme/ThemeSelector";
+import { ThemeSelector } from "@/ui/theme/ThemeSelector.tsx";
+
 export function Theme() {
   return (
     <div className="flex flex-col items-center mt-6 mx-20">

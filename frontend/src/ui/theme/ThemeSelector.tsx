@@ -1,4 +1,4 @@
-import type { ThemeName } from "@/constants/theme";
+import type { ThemeName } from "@/constants/theme.ts";
 import { ThemeSelectButton } from "@/ui/theme/ThemeSelectButton.tsx";
 import { useTheme } from "@/hooks/useTheme.ts";
 import { themeNames } from "@/constants/theme.ts";
