@@ -6,10 +6,10 @@ export type ScheduleSuggestionEvent = {
   start_at: string | null
   end_at: string | null
   all_day: boolean
+  missing_fields: string[]
 }
 
 export type ScheduleSuggestion = {
   status: 'ready' | 'needs_clarification'
-  event: ScheduleSuggestionEvent
-  missing_fields: string[]
+  events: ScheduleSuggestionEvent[]
 }
