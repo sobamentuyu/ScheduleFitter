@@ -1,6 +1,7 @@
-import { useState } from "react";
-import { useAuth } from "../contexts/AuthContext";
-import logoImg from "@/assets/logo.png";
+import { useState } from 'react';
+import { useAuth } from '@/hooks/useAuth.ts';
+import logoImg from '@/assets/logo.png';
+
 export default function Login() {
   const { loginWithSso } = useAuth();
   const [loading, setLoading] = useState(false);

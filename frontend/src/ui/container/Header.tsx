@@ -1,8 +1,9 @@
 import { CaretLeftIcon, GearIcon, SignOutIcon } from "@phosphor-icons/react";
 import { Link, useLocation } from "react-router-dom";
 import { Text } from "@/ui/common/Text.tsx";
-import { useAuth } from "@/contexts/AuthContext.tsx";
+import { useAuth } from "@/hooks/useAuth";
 import logoImg from "@/assets/logo.png";
+
 const pageConfig: Record<
   string,
   { title: string; showBack: boolean; backTo: string }
