@@ -5,7 +5,7 @@ import { useCalendarEvents } from '@/hooks/useCalendarEvents.ts'
 import { VIEWS, type CalendarView } from '@/constants/calendarViews.ts'
 import type { EventDetail } from '@/types/event.ts'
 
-export function useCalendar() {
+export function useCalendar(revision = 0) {
   const { error, loadEvents } = useCalendarEvents()
   const calendarRef = useRef<FullCalendar>(null)
   const wrapRef = useRef<HTMLDivElement>(null)
@@ -22,6 +22,12 @@ export function useCalendar() {
     observer.observe(el)
     return () => observer.disconnect()
   }, [])
+
+  useEffect(() => {
+    if (revision > 0) {
+      calendarRef.current?.getApi().refetchEvents()
+    }
+  }, [revision])
 
   const handleDatesSet = (arg: DatesSetArg) => {
     setTitle(arg.view.title)

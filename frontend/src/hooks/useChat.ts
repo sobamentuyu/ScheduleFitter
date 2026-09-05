@@ -1,11 +1,21 @@
 import { useEffect, useRef, useState } from "react";
+import { createEvent } from "@/api/events.ts";
 import {
   createScheduleSuggestion,
   createScheduleSuggestionFromImage,
   validateScheduleImage,
 } from "@/api/scheduleSuggestions.ts";
-import type { ChatMessage, ChatRole } from "@/types/chat.ts";
-import { formatScheduleSuggestion } from "@/utils/formatScheduleSuggestion.ts";
+import type {
+  ChatMessage,
+  ChatRole,
+  ScheduleConfirmationMessage,
+  TextChatMessage,
+} from "@/types/chat.ts";
+import type {
+  ScheduleSuggestion,
+  ScheduleSuggestionEvent,
+} from "@/types/scheduleSuggestion.ts";
+import { formatScheduleSuggestionHeader } from "@/utils/formatScheduleSuggestion.ts";
 
 export type PendingImage = {
   file: File;
@@ -16,9 +26,10 @@ function createMessage(
   role: ChatRole,
   text: string,
   imageUrl?: string,
-): ChatMessage {
+): TextChatMessage {
   return {
     id: crypto.randomUUID(),
+    type: "text",
     role,
     text,
     createdAt: new Date().toISOString(),
@@ -26,7 +37,11 @@ function createMessage(
   };
 }
 
-export function useChat() {
+type UseChatOptions = {
+  onEventCreated?: () => void;
+};
+
+export function useChat({ onEventCreated }: UseChatOptions = {}) {
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [message, setMessage] = useState("");
@@ -35,13 +50,15 @@ export function useChat() {
   const sendingRef = useRef(false);
   const imageUrlsRef = useRef<string[]>([]);
   const pendingUrlRef = useRef<string | null>(null);
+  const approvingIdsRef = useRef(new Set<string>());
 
   useEffect(() => {
+    const imageUrls = imageUrlsRef.current;
     return () => {
       if (pendingUrlRef.current) {
         URL.revokeObjectURL(pendingUrlRef.current);
       }
-      for (const url of imageUrlsRef.current) {
+      for (const url of imageUrls) {
         URL.revokeObjectURL(url);
       }
     };
@@ -61,6 +78,28 @@ export function useChat() {
       pendingUrlRef.current = null;
     }
     setPendingImage(null);
+  };
+
+  const appendSuggestion = (suggestion: ScheduleSuggestion) => {
+    const events = Array.isArray(suggestion.events) ? suggestion.events : [];
+    const readyCount = events.filter((event) => event.status === "ready").length;
+    const responseText = formatScheduleSuggestionHeader(events.length, readyCount);
+
+    if (events.length > 0) {
+      const confirmation: ScheduleConfirmationMessage = {
+        id: crypto.randomUUID(),
+        type: "schedule_confirmation",
+        role: "assistant",
+        text: responseText,
+        suggestion,
+        confirmationState: "pending",
+        createdAt: new Date().toISOString(),
+      };
+      setMessages((prev) => [...prev, confirmation]);
+      return;
+    }
+
+    setMessages((prev) => [...prev, createMessage("assistant", responseText)]);
   };
 
   const attachImage = (file: File) => {
@@ -90,10 +129,7 @@ export function useChat() {
 
     try {
       const suggestion = await createScheduleSuggestion(text);
-      setMessages((prev) => [
-        ...prev,
-        createMessage("assistant", formatScheduleSuggestion(suggestion)),
-      ]);
+      appendSuggestion(suggestion);
     } catch (error) {
       showError(error);
     }
@@ -111,10 +147,7 @@ export function useChat() {
         pending.file,
         text,
       );
-      setMessages((prev) => [
-        ...prev,
-        createMessage("assistant", formatScheduleSuggestion(suggestion)),
-      ]);
+      appendSuggestion(suggestion);
     } catch (error) {
       showError(error);
     }
@@ -141,6 +174,73 @@ export function useChat() {
     }
   };
 
+  const approveSuggestion = async (
+    messageId: string,
+    events: ScheduleSuggestionEvent[],
+  ) => {
+    if (approvingIdsRef.current.has(messageId)) return;
+
+    const confirmation = messages.find(
+      (item): item is ScheduleConfirmationMessage =>
+        item.id === messageId && item.type === "schedule_confirmation",
+    );
+    if (!confirmation || !["pending", "failed"].includes(confirmation.confirmationState)) return;
+
+    const selectedEvents = events.flatMap((event) => {
+      if (event.status !== "ready") return [];
+      const { start_at, end_at } = event;
+      if (start_at === null || end_at === null) return [];
+      return [{ event, start_at, end_at }];
+    });
+
+    if (selectedEvents.length === 0) return;
+
+    approvingIdsRef.current.add(messageId);
+    setMessages((prev) => prev.map((item) =>
+      item.id === messageId && item.type === "schedule_confirmation"
+        ? { ...item, confirmationState: "saving" }
+        : item,
+    ));
+
+    try {
+      await Promise.all(selectedEvents.map(({ event, start_at, end_at }) =>
+        createEvent({
+          title: event.title,
+          description: event.description,
+          location: event.location,
+          category: event.category,
+          start_at,
+          end_at,
+          all_day: event.all_day,
+        }),
+      ));
+      setMessages((prev) => prev.map((item) =>
+        item.id === messageId && item.type === "schedule_confirmation"
+          ? { ...item, confirmationState: "approved" }
+          : item,
+      ));
+      onEventCreated?.();
+    } catch {
+      setMessages((prev) => prev.map((item) =>
+        item.id === messageId && item.type === "schedule_confirmation"
+          ? { ...item, confirmationState: "failed" }
+          : item,
+      ));
+    } finally {
+      approvingIdsRef.current.delete(messageId);
+    }
+  };
+
+  const cancelSuggestion = (messageId: string) => {
+    if (approvingIdsRef.current.has(messageId)) return;
+    setMessages((prev) => prev.map((item) =>
+      item.id === messageId && item.type === "schedule_confirmation" &&
+      ["pending", "failed"].includes(item.confirmationState)
+        ? { ...item, confirmationState: "cancelled" }
+        : item,
+    ));
+  };
+
   return {
     isChatOpen,
     setIsChatOpen,
@@ -151,6 +251,8 @@ export function useChat() {
     attachImage,
     clearPendingImage,
     sendMessage,
+    approveSuggestion,
+    cancelSuggestion,
     isSending,
   };
 }

@@ -11,9 +11,14 @@ import { useChatScroll } from "@/hooks/useChatScroll.ts";
 import { useMultilineInput } from "@/hooks/useMultilineInput.ts";
 import { useVoiceInput } from "@/hooks/useVoiceInput.ts";
 import { Text } from "@/ui/common/Text.tsx";
+import { ScheduleConfirmationCard } from "@/ui/container/chat/ScheduleConfirmationCard.tsx";
 
-export function Chatpanel() {
-  const chat = useChat();
+type ChatpanelProps = {
+  onEventCreated?: () => void;
+};
+
+export function Chatpanel({ onEventCreated }: ChatpanelProps) {
+  const chat = useChat({ onEventCreated });
   const listRef = useChatScroll(chat.messages, chat.isSending);
   const { probeRef, isMultiline } = useMultilineInput(chat.message);
   const isComposerStacked = isMultiline || chat.pendingImage !== null;
@@ -48,6 +53,7 @@ export function Chatpanel() {
         <div ref={listRef} className="min-h-0 flex-1 overflow-y-auto p-4">
           <div className="flex flex-col gap-3" aria-busy={chat.isSending}>
             {chat.messages.map((msg, index) => {
+              const imageUrl = msg.type === "text" ? msg.imageUrl : undefined;
               const messageDate = new Date(msg.createdAt);
               const previous = index > 0 ? chat.messages[index - 1] : undefined;
               const previousDate = previous
@@ -80,22 +86,32 @@ export function Chatpanel() {
                   >
                     <div
                       className={`chat-bubble inline-block max-w-[80%] bg-base-100 ${
-                        msg.imageUrl
+                        imageUrl
                           ? "overflow-hidden p-1"
                           : "whitespace-pre-wrap break-words"
                       }`}
                     >
-                      {msg.imageUrl && (
+                      {imageUrl && (
                         <img
-                          src={msg.imageUrl}
+                          src={imageUrl}
                           alt="送信した画像"
                           className="block max-h-52 max-w-full rounded-[1.1rem] object-contain"
                         />
                       )}
                       {msg.text !== "" && (
-                        <span className={msg.imageUrl ? "block px-3 py-2" : undefined}>
+                        <span className={imageUrl ? "block px-3 py-2" : undefined}>
                           {msg.text}
                         </span>
+                      )}
+                      {msg.type === "schedule_confirmation" && (
+                        <ScheduleConfirmationCard
+                          state={msg.confirmationState}
+                          events={msg.suggestion.events}
+                          onApprove={(selected) =>
+                            void chat.approveSuggestion(msg.id, selected)
+                          }
+                          onCancel={() => chat.cancelSuggestion(msg.id)}
+                        />
                       )}
                     </div>
                   </div>
