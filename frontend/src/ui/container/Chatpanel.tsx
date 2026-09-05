@@ -106,7 +106,10 @@ export function Chatpanel({ onEventCreated }: ChatpanelProps) {
                       {msg.type === "schedule_confirmation" && (
                         <ScheduleConfirmationCard
                           state={msg.confirmationState}
-                          onApprove={() => void chat.approveSuggestion(msg.id)}
+                          events={msg.suggestion.events}
+                          onApprove={(selected) =>
+                            void chat.approveSuggestion(msg.id, selected)
+                          }
                           onCancel={() => chat.cancelSuggestion(msg.id)}
                         />
                       )}

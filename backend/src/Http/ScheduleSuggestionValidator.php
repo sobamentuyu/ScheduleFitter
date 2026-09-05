@@ -52,7 +52,6 @@ final class ScheduleSuggestionValidator
         }
 
         $events = [];
-        $allReady = $data['events'] !== [];
 
         foreach ($data['events'] as $index => $event) {
             if (!is_array($event)) {
@@ -60,6 +59,8 @@ final class ScheduleSuggestionValidator
                     "events[{$index}] must be an object."
                 );
             }
+
+            unset($event['status']);
 
             if (!array_key_exists('missing_fields', $event)) {
                 $event['missing_fields'] = [];
@@ -78,15 +79,11 @@ final class ScheduleSuggestionValidator
                 && $event['start_at'] !== null
                 && $event['end_at'] !== null;
 
-            if (!$hasRequiredFields) {
-                $allReady = false;
-            }
-
+            $event['status'] = $hasRequiredFields ? 'ready' : 'needs_clarification';
             $events[] = $event;
         }
 
         return [
-            'status' => $allReady ? 'ready' : 'needs_clarification',
             'events' => $events,
         ];
     }

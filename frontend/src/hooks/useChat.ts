@@ -11,8 +11,11 @@ import type {
   ScheduleConfirmationMessage,
   TextChatMessage,
 } from "@/types/chat.ts";
-import type { ScheduleSuggestion } from "@/types/scheduleSuggestion.ts";
-import { formatScheduleSuggestion } from "@/utils/formatScheduleSuggestion.ts";
+import type {
+  ScheduleSuggestion,
+  ScheduleSuggestionEvent,
+} from "@/types/scheduleSuggestion.ts";
+import { formatScheduleSuggestionHeader } from "@/utils/formatScheduleSuggestion.ts";
 
 export type PendingImage = {
   file: File;
@@ -78,8 +81,11 @@ export function useChat({ onEventCreated }: UseChatOptions = {}) {
   };
 
   const appendSuggestion = (suggestion: ScheduleSuggestion) => {
-    const responseText = formatScheduleSuggestion(suggestion);
-    if (suggestion.status === "ready" && suggestion.events.length > 0) {
+    const events = Array.isArray(suggestion.events) ? suggestion.events : [];
+    const readyCount = events.filter((event) => event.status === "ready").length;
+    const responseText = formatScheduleSuggestionHeader(events.length, readyCount);
+
+    if (events.length > 0) {
       const confirmation: ScheduleConfirmationMessage = {
         id: crypto.randomUUID(),
         type: "schedule_confirmation",
@@ -92,6 +98,7 @@ export function useChat({ onEventCreated }: UseChatOptions = {}) {
       setMessages((prev) => [...prev, confirmation]);
       return;
     }
+
     setMessages((prev) => [...prev, createMessage("assistant", responseText)]);
   };
 
@@ -167,7 +174,10 @@ export function useChat({ onEventCreated }: UseChatOptions = {}) {
     }
   };
 
-  const approveSuggestion = async (messageId: string) => {
+  const approveSuggestion = async (
+    messageId: string,
+    events: ScheduleSuggestionEvent[],
+  ) => {
     if (approvingIdsRef.current.has(messageId)) return;
 
     const confirmation = messages.find(
@@ -175,6 +185,15 @@ export function useChat({ onEventCreated }: UseChatOptions = {}) {
         item.id === messageId && item.type === "schedule_confirmation",
     );
     if (!confirmation || !["pending", "failed"].includes(confirmation.confirmationState)) return;
+
+    const selectedEvents = events.flatMap((event) => {
+      if (event.status !== "ready") return [];
+      const { start_at, end_at } = event;
+      if (start_at === null || end_at === null) return [];
+      return [{ event, start_at, end_at }];
+    });
+
+    if (selectedEvents.length === 0) return;
 
     approvingIdsRef.current.add(messageId);
     setMessages((prev) => prev.map((item) =>
@@ -184,15 +203,17 @@ export function useChat({ onEventCreated }: UseChatOptions = {}) {
     ));
 
     try {
-      await Promise.all(confirmation.suggestion.events.map((event) => createEvent({
-        title: event.title,
-        description: event.description,
-        location: event.location,
-        category: event.category,
-        start_at: event.start_at!,
-        end_at: event.end_at!,
-        all_day: event.all_day,
-      })));
+      await Promise.all(selectedEvents.map(({ event, start_at, end_at }) =>
+        createEvent({
+          title: event.title,
+          description: event.description,
+          location: event.location,
+          category: event.category,
+          start_at,
+          end_at,
+          all_day: event.all_day,
+        }),
+      ));
       setMessages((prev) => prev.map((item) =>
         item.id === messageId && item.type === "schedule_confirmation"
           ? { ...item, confirmationState: "approved" }

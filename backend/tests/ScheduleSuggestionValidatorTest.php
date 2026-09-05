@@ -43,24 +43,25 @@ function expectInvalid(callable $change, string $message): void
 
 $valid = validSuggestion();
 $validated = ScheduleSuggestionValidator::validate($valid);
-assert($validated['status'] === 'ready');
+assert(!array_key_exists('status', $validated));
 assert(count($validated['events']) === 1);
+assert($validated['events'][0]['status'] === 'ready');
 
 $empty = ScheduleSuggestionValidator::validate(['events' => []]);
-assert($empty['status'] === 'needs_clarification');
+assert(!array_key_exists('status', $empty));
 assert($empty['events'] === []);
 
 $needsClarification = validSuggestion();
 $needsClarification['events'][0]['start_at'] = null;
 $needsClarification['events'][0]['missing_fields'] = ['start_at'];
 $validated = ScheduleSuggestionValidator::validate($needsClarification);
-assert($validated['status'] === 'needs_clarification');
+assert($validated['events'][0]['status'] === 'needs_clarification');
 
 $titleMissing = validSuggestion();
 $titleMissing['events'][0]['title'] = '';
 $titleMissing['events'][0]['missing_fields'] = ['title'];
 $validated = ScheduleSuggestionValidator::validate($titleMissing);
-assert($validated['status'] === 'needs_clarification');
+assert($validated['events'][0]['status'] === 'needs_clarification');
 
 $multiple = [
     'events' => [
@@ -74,8 +75,24 @@ $multiple = [
     ],
 ];
 $validated = ScheduleSuggestionValidator::validate($multiple);
-assert($validated['status'] === 'ready');
+assert($validated['events'][0]['status'] === 'ready');
+assert($validated['events'][1]['status'] === 'ready');
 assert(count($validated['events']) === 2);
+
+$mixed = [
+    'events' => [
+        validEvent(),
+        array_merge(validEvent(), [
+            'title' => '会議',
+            'start_at' => null,
+            'end_at' => null,
+            'missing_fields' => ['date'],
+        ]),
+    ],
+];
+$validated = ScheduleSuggestionValidator::validate($mixed);
+assert($validated['events'][0]['status'] === 'ready');
+assert($validated['events'][1]['status'] === 'needs_clarification');
 
 $legacy = [
     'event' => [
@@ -90,14 +107,16 @@ $legacy = [
     'missing_fields' => [],
 ];
 $validated = ScheduleSuggestionValidator::validate($legacy);
-assert($validated['status'] === 'ready');
+assert($validated['events'][0]['status'] === 'ready');
 assert($validated['events'][0]['title'] === '打ち合わせ');
 assert($validated['events'][0]['missing_fields'] === []);
 
 $withStatus = validSuggestion();
 $withStatus['status'] = 'needs_clarification';
+$withStatus['events'][0]['status'] = 'needs_clarification';
 $validated = ScheduleSuggestionValidator::validate($withStatus);
-assert($validated['status'] === 'ready');
+assert(!array_key_exists('status', $validated));
+assert($validated['events'][0]['status'] === 'ready');
 
 $withoutMissingFields = validSuggestion();
 unset($withoutMissingFields['events'][0]['missing_fields']);
