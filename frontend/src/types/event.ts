@@ -14,3 +14,14 @@ export type CalendarEvent = {
   end: string
   allDay: boolean
 }
+
+export type EventDetail = {
+  id: string
+  title: string
+  start: Date | null
+  end: Date | null
+  allDay: boolean
+  description: string | null
+  location: string | null
+  category: string | null
+}

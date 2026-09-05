@@ -5,6 +5,7 @@ import jaLocale from '@fullcalendar/core/locales/ja'
 import { useCalendar } from '@/hooks/useCalendar.ts'
 import { Text } from '@/ui/common/Text.tsx'
 import { CalendarToolbar } from '@/ui/container/calendar/Toolbar.tsx'
+import { EventDetailPopup } from '@/ui/container/calendar/EventDetailPopup.tsx'
 import {
   dayCellClassNames,
   renderDayCell,
@@ -21,7 +22,10 @@ export function Calendar() {
     wrapRef,
     title,
     currentView,
+    selectedEvent,
     handleDatesSet,
+    handleEventClick,
+    closeEventDetail,
     onPrev,
     onNext,
     onToday,
@@ -70,9 +74,10 @@ export function Calendar() {
           }}
           events={loadEvents}
           datesSet={handleDatesSet}
+          eventClick={handleEventClick}
           dayHeaderClassNames="bg-primary py-2"
           dayCellClassNames={dayCellClassNames}
-          eventClassNames="font-medium"
+          eventClassNames="cursor-pointer font-medium"
           moreLinkClassNames="mx-1.5"
           dayCellContent={renderDayCell}
           dayHeaderContent={renderDayHeader}
@@ -80,6 +85,8 @@ export function Calendar() {
           slotLabelContent={renderSlotLabel}
         />
       </div>
+
+      <EventDetailPopup event={selectedEvent} onClose={closeEventDetail} />
     </div>
   )
 }
