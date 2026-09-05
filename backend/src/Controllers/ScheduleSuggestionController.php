@@ -11,9 +11,12 @@ use RuntimeException;
 
 final class ScheduleSuggestionController
 {
+    private const IMAGE_USER_PROMPT = 'この画像から予定情報だけを抽出してください';
+
     public function __construct(
         private readonly GeminiService $gemini = new GeminiService(),
     ) {}
+
     private function requireUserId(): ?int
     {
         $sessionUser = $_SESSION['user'] ?? null;
@@ -25,6 +28,7 @@ final class ScheduleSuggestionController
         Response::error('ログインが必要です', 401);
         return null;
     }
+
     public function create(Request $request): void
     {
         try {
@@ -33,7 +37,7 @@ final class ScheduleSuggestionController
                 return;
             }
 
-            $payload = ScheduleSuggestionPayload::parse($request->body);
+            $payload = ScheduleSuggestionPayload::parse($request->body, $request->files);
             $instructionPath = dirname(__DIR__) . '/Prompts/order.txt';
             $systemInstruction = file_get_contents($instructionPath);
 
@@ -46,11 +50,33 @@ final class ScheduleSuggestionController
             $systemInstruction .= "\n\nTrusted reference context:\n"
                 . 'reference_datetime: ' . $now->format(\DateTimeInterface::ATOM) . "\n"
                 . "timezone: Asia/Tokyo\n";
-            $suggestion = json_decode(
-                $this->gemini->generateText(
+
+            $generationConfig = [
+                'responseMimeType' => 'application/json',
+            ];
+
+            if ($payload['kind'] === 'image') {
+                $rawSuggestion = $this->gemini->generateFromParts(
+                    [
+                        ['text' => self::IMAGE_USER_PROMPT],
+                        ['inlineData' => [
+                            'mimeType' => $payload['mimeType'],
+                            'data' => base64_encode($payload['bytes']),
+                        ]],
+                    ],
+                    $systemInstruction,
+                    $generationConfig,
+                );
+            } else {
+                $rawSuggestion = $this->gemini->generateText(
                     $payload['request'],
                     $systemInstruction,
-                ),
+                    $generationConfig,
+                );
+            }
+
+            $suggestion = json_decode(
+                $rawSuggestion,
                 true,
                 512,
                 JSON_THROW_ON_ERROR
@@ -65,7 +91,10 @@ final class ScheduleSuggestionController
             Response::error('Unable to generate a schedule suggestion.', 502, [
                 'detail' => $exception->getMessage(),
             ]);
+        } catch (\JsonException $exception) {
+            Response::error('Unable to generate a schedule suggestion.', 502, [
+                'detail' => $exception->getMessage(),
+            ]);
         }
     }
-
 }

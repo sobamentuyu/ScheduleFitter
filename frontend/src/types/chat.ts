@@ -5,4 +5,5 @@ export type ChatMessage = {
   role: ChatRole;
   text: string;
   createdAt: string;
+  imageUrl?: string;
 };
