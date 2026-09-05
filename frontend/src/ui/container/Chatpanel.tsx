@@ -5,6 +5,7 @@ import {
   PlusIcon,
   XIcon,
 } from "@phosphor-icons/react";
+import { useRef } from "react";
 import { useChat } from "@/hooks/useChat.ts";
 import { useChatScroll } from "@/hooks/useChatScroll.ts";
 import { useMultilineInput } from "@/hooks/useMultilineInput.ts";
@@ -15,7 +16,9 @@ export function Chatpanel() {
   const chat = useChat();
   const listRef = useChatScroll(chat.messages, chat.isSending);
   const { probeRef, isMultiline } = useMultilineInput(chat.message);
+  const isComposerStacked = isMultiline || chat.pendingImage !== null;
   const voice = useVoiceInput(chat.message, chat.setMessage, chat.isChatOpen);
+  const imageInputRef = useRef<HTMLInputElement>(null);
 
   return (
     <>
@@ -75,8 +78,25 @@ export function Chatpanel() {
                       msg.role === "user" ? "chat-end" : "chat-start"
                     }`}
                   >
-                    <div className="chat-bubble inline-block max-w-[80%] whitespace-pre-wrap break-words bg-base-100">
-                      {msg.text}
+                    <div
+                      className={`chat-bubble inline-block max-w-[80%] bg-base-100 ${
+                        msg.imageUrl
+                          ? "overflow-hidden p-1"
+                          : "whitespace-pre-wrap break-words"
+                      }`}
+                    >
+                      {msg.imageUrl && (
+                        <img
+                          src={msg.imageUrl}
+                          alt="送信した画像"
+                          className="block max-h-52 max-w-full rounded-[1.1rem] object-contain"
+                        />
+                      )}
+                      {msg.text !== "" && (
+                        <span className={msg.imageUrl ? "block px-3 py-2" : undefined}>
+                          {msg.text}
+                        </span>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -95,7 +115,7 @@ export function Chatpanel() {
         <div className="flex shrink-0 items-end gap-2 border-t border-base-300 p-2">
           <div
             className={`relative flex min-w-0 flex-1 rounded-3xl bg-base-100 ${
-              isMultiline ? "flex-col" : "items-end"
+              isComposerStacked ? "flex-col" : "items-end"
             }`}
           >
             <div
@@ -105,8 +125,26 @@ export function Chatpanel() {
             >
               {chat.message || " "}
             </div>
+            {chat.pendingImage && (
+              <div className="relative w-fit px-3 pt-3">
+                <img
+                  src={chat.pendingImage.url}
+                  alt="添付した画像"
+                  className="block max-h-28 max-w-[12rem] rounded-2xl object-contain"
+                />
+                <button
+                  type="button"
+                  aria-label="画像の添付をやめる"
+                  disabled={chat.isSending}
+                  onClick={chat.clearPendingImage}
+                  className="btn btn-circle btn-xs absolute -right-1 -top-0 bg-base-300"
+                >
+                  <XIcon size={14} weight="bold" />
+                </button>
+              </div>
+            )}
             <div
-              className={`grid min-w-0 ${isMultiline ? "w-full" : "flex-1"}`}
+              className={`grid min-w-0 ${isComposerStacked ? "w-full" : "flex-1"}`}
             >
               <textarea
                 aria-label="メッセージ"
@@ -125,7 +163,7 @@ export function Chatpanel() {
             </div>
             <div
               className={`flex shrink-0 items-center justify-end gap-1 pr-2 ${
-                isMultiline ? "pb-1" : "py-1"
+                isComposerStacked ? "pb-1" : "py-1"
               }`}
             >
               <button
@@ -147,9 +185,22 @@ export function Chatpanel() {
                   color="var(--color-primary-content)"
                 />
               </button>
+              <input
+                ref={imageInputRef}
+                type="file"
+                accept="image/jpeg,image/png,image/webp,image/heic,image/heif"
+                className="hidden"
+                onChange={(event) => {
+                  const file = event.target.files?.[0];
+                  event.target.value = "";
+                  if (file) chat.attachImage(file);
+                }}
+              />
               <button
                 type="button"
                 aria-label="画像を添付"
+                disabled={chat.isSending}
+                onClick={() => imageInputRef.current?.click()}
                 className="btn btn-circle btn-ghost btn-xs"
               >
                 <ImageIcon
@@ -168,7 +219,9 @@ export function Chatpanel() {
               void chat.sendMessage();
             }}
             disabled={
-              chat.message.trim() === "" || chat.isSending || voice.listening
+              (chat.message.trim() === "" && chat.pendingImage === null) ||
+              chat.isSending ||
+              voice.listening
             }
             className="btn btn-circle btn-lg bg-[var(--color-chat)]"
           >

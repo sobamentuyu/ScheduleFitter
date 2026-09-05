@@ -4,12 +4,96 @@
 }
 
 @plugin "daisyui/theme" {
-  name: "pastel";
+  name: "purple";
   default: true;
   --color-primary: #ded3df;
   --color-primary-content: #2a2a2a;
   --color-secondary: #f6e9f6;
   --color-chat: #e8b8e6;
+}
+@plugin "daisyui/theme" {
+  name: "blue";
+  --color-primary: #d7d7e2;
+  --color-primary-content: #2a2a2a;
+  --color-secondary: #ecf3fe;
+  --color-chat: #a3bce2;
+}
+@plugin "daisyui/theme" {
+  name: "orange";
+  --color-primary: #e0d4c3;
+  --color-primary-content: #2a2a2a;
+  --color-secondary: #fbf1e5;
+  --color-chat: #fcd7a1;
+}
+@plugin "daisyui/theme" {
+  name: "yellow";
+  --color-primary: #dcdac4;
+  --color-primary-content: #2a2a2a;
+  --color-secondary: #fefcec;
+  --color-chat: #fbf5b6;
+}
+@plugin "daisyui/theme" {
+  name: "pink";
+  --color-primary: #d6bfcd;
+  --color-primary-content: #2a2a2a;
+  --color-secondary: #ffe8f6;
+  --color-chat: #f5bce3;
+}
+@plugin "daisyui/theme" {
+  name: "red";
+  --color-primary: #d8bfbf;
+  --color-primary-content: #2a2a2a;
+  --color-secondary: #fceeee;
+  --color-chat: #f5b2b2;
+}
+@plugin "daisyui/theme" {
+  name: "green";
+  --color-primary: #d5e1e1;
+  --color-primary-content: #2a2a2a;
+  --color-secondary: #e6f0ef;
+  --color-chat: #a2d7d4;
+}
+[data-theme="purple"] {
+  --color-primary: #ded3df;
+  --color-primary-content: #2a2a2a;
+  --color-secondary: #f6e9f6;
+  --color-chat: #e8b8e6;
+}
+[data-theme="blue"] {
+  --color-primary: #d7d7e2;
+  --color-primary-content: #2a2a2a;
+  --color-secondary: #ecf3fe;
+  --color-chat: #a3bce2;
+}
+[data-theme="green"] {
+  --color-primary: #d5e1e1;
+  --color-primary-content: #2a2a2a;
+  --color-secondary: #e6f0ef;
+  --color-chat: #a2d7d4;
+}
+[data-theme="orange"] {
+  --color-primary: #e0d4c3;
+  --color-primary-content: #2a2a2a;
+  --color-secondary: #fbf1e5;
+  --color-chat: #fcd7a1;
+}
+[data-theme="red"] {
+  --color-primary: #d8bfbf;
+  --color-primary-content: #2a2a2a;
+  --color-secondary: #fceeee;
+  --color-chat: #f5b2b2;
+}
+[data-theme="yellow"] {
+  --color-primary: #dcdac4;
+  --color-primary-content: #2a2a2a;
+  --color-secondary: #fefcec;
+  --color-chat: #fbf5b6;
+}
+[data-theme="pink"] {
+  --color-primary: #d6bfcd;
+  --color-primary-content: #2a2a2a;
+  --color-secondary: #ffe8f6;
+  --color-chat: #f5bce3;
 }
 
 @theme inline {
