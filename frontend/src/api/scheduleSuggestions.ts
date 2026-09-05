@@ -75,9 +75,13 @@ export async function createScheduleSuggestion(
 
 export async function createScheduleSuggestionFromImage(
   file: File,
+  request = '',
 ): Promise<ScheduleSuggestion> {
   const body = new FormData()
   body.append('image', file)
+  if (request !== '') {
+    body.append('request', request)
+  }
 
   const res = await fetch(`${API_BASE}/api/schedule-suggestions`, {
     method: 'POST',

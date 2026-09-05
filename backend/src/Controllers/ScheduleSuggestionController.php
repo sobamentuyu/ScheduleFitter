@@ -12,6 +12,7 @@ use RuntimeException;
 final class ScheduleSuggestionController
 {
     private const IMAGE_USER_PROMPT = 'この画像から予定情報だけを抽出してください';
+    private const IMAGE_AND_TEXT_USER_PROMPT = '次の画像とテキストから予定情報だけを抽出してください。テキストは画像を補う追加情報です。';
 
     public function __construct(
         private readonly GeminiService $gemini = new GeminiService(),
@@ -56,14 +57,25 @@ final class ScheduleSuggestionController
             ];
 
             if ($payload['kind'] === 'image') {
-                $rawSuggestion = $this->gemini->generateFromParts(
-                    [
+                $parts = $payload['request'] !== ''
+                    ? [
+                        ['text' => self::IMAGE_AND_TEXT_USER_PROMPT],
+                        ['text' => $payload['request']],
+                        ['inlineData' => [
+                            'mimeType' => $payload['mimeType'],
+                            'data' => base64_encode($payload['bytes']),
+                        ]],
+                    ]
+                    : [
                         ['text' => self::IMAGE_USER_PROMPT],
                         ['inlineData' => [
                             'mimeType' => $payload['mimeType'],
                             'data' => base64_encode($payload['bytes']),
                         ]],
-                    ],
+                    ];
+
+                $rawSuggestion = $this->gemini->generateFromParts(
+                    $parts,
                     $systemInstruction,
                     $generationConfig,
                 );

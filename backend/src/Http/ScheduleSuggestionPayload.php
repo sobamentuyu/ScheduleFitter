@@ -19,24 +19,26 @@ final class ScheduleSuggestionPayload
     /**
      * @param array<string, mixed> $body
      * @param array<string, mixed> $files
-     * @return array{kind: 'text', request: string}|array{kind: 'image', mimeType: string, bytes: string}
+     * @return array{kind: 'text', request: string}|array{kind: 'image', mimeType: string, bytes: string, request: string}
      */
     public static function parse(array $body, array $files = []): array
     {
-        if (isset($files['image']) && is_array($files['image'])) {
-            return self::parseImage($files['image']);
-        }
-
         $request = isset($body['request']) && is_string($body['request'])
             ? trim($body['request'])
             : '';
 
-        if ($request === '') {
-            throw new InvalidArgumentException('request or image is required.');
-        }
-
         if (mb_strlen($request) > 4_000) {
             throw new InvalidArgumentException('request must be 4000 characters or fewer.');
+        }
+
+        if (isset($files['image']) && is_array($files['image'])) {
+            $image = self::parseImage($files['image']);
+            $image['request'] = $request;
+            return $image;
+        }
+
+        if ($request === '') {
+            throw new InvalidArgumentException('request or image is required.');
         }
 
         return [

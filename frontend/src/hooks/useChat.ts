@@ -99,14 +99,18 @@ export function useChat() {
     }
   };
 
-  const sendPendingImage = async (pending: PendingImage) => {
+  const sendPendingImage = async (pending: PendingImage, text: string) => {
     imageUrlsRef.current.push(pending.url);
     pendingUrlRef.current = null;
     setPendingImage(null);
-    setMessages((prev) => [...prev, createMessage("user", "", pending.url)]);
+    setMessage("");
+    setMessages((prev) => [...prev, createMessage("user", text, pending.url)]);
 
     try {
-      const suggestion = await createScheduleSuggestionFromImage(pending.file);
+      const suggestion = await createScheduleSuggestionFromImage(
+        pending.file,
+        text,
+      );
       setMessages((prev) => [
         ...prev,
         createMessage("assistant", formatScheduleSuggestion(suggestion)),
@@ -126,7 +130,7 @@ export function useChat() {
 
     try {
       if (pending !== null) {
-        await sendPendingImage(pending);
+        await sendPendingImage(pending, text);
         return;
       }
 
