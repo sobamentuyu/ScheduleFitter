@@ -46,6 +46,18 @@ $needsClarification['missing_fields'] = ['start_at'];
 $validated = ScheduleSuggestionValidator::validate($needsClarification);
 assert($validated['status'] === 'needs_clarification');
 
+$optionalFieldMissing = validSuggestion();
+$optionalFieldMissing['event']['description'] = null;
+$optionalFieldMissing['missing_fields'] = ['description'];
+$validated = ScheduleSuggestionValidator::validate($optionalFieldMissing);
+assert($validated['status'] === 'ready');
+
+$titleMissing = validSuggestion();
+$titleMissing['event']['title'] = '';
+$titleMissing['missing_fields'] = ['title'];
+$validated = ScheduleSuggestionValidator::validate($titleMissing);
+assert($validated['status'] === 'needs_clarification');
+
 expectInvalid(fn (array &$data) => $data['event']['title'] = null, 'invalid title type');
 expectInvalid(fn (array &$data) => $data['event']['description'] = 1, 'invalid nullable string');
 expectInvalid(fn (array &$data) => $data['event']['all_day'] = 0, 'invalid boolean');

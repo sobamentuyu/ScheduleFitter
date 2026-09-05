@@ -56,7 +56,11 @@ final class ScheduleSuggestionValidator
         self::validateEvent($data['event']);
         self::validateMissingFields($data['missing_fields']);
 
-        $data['status'] = $data['missing_fields'] === []
+        $hasRequiredFields = trim($data['event']['title']) !== ''
+            && $data['event']['start_at'] !== null
+            && $data['event']['end_at'] !== null;
+
+        $data['status'] = $hasRequiredFields
             ? 'ready'
             : 'needs_clarification';
 
