@@ -34,7 +34,7 @@ Gemini の予定候補 API を使用するには、`Backend/.env` を作成・�
 
 ```dotenv
 GEMINI_API_KEY=your_google_ai_studio_api_key
-GEMINI_MODEL=gemini-2.5-flash
+GEMINI_MODEL=gemini-3.6-flash
 GEMINI_API_TIMEOUT_SECONDS=30
 ```
 
@@ -160,7 +160,7 @@ Gemini が生成した提案を含む JSON オブジェクトを返します。
 ```json
 {
   "suggestion": "{\n  \"status\": \"ready\",\n  \"event\": {\n    \"title\": \"打ち合わせ\",\n    \"description\": null,\n    \"location\": \"渋谷\",\n    \"category\": null,\n    \"start_at\": \"2024-05-20T15:00:00+09:00\",\n    \"end_at\": null,\n    \"all_day\": false\n  },\n  \"missing_fields\": [\"end_at\"]\n}",
-  "model": "gemini-2.5-flash"
+  "model": "gemini-3.6-flash"
 }
 ```
 *注: `suggestion` フィールドには、Gemini から返された文字列形式の JSON オブジェクトが含まれます。*
