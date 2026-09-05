@@ -1,12 +1,14 @@
-import type { CalendarEvent } from '@/types/event.ts'
+import type { CalendarEvent, CreateEventPayload } from '@/types/event.ts'
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8080'
 
-async function request<T>(path: string): Promise<T> {
+async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
   const res = await fetch(`${API_BASE}${path}`, {
+    ...options,
     credentials: 'include',
     headers: {
       'Content-Type': 'application/json',
+      ...options.headers,
     },
   })
 
@@ -30,4 +32,11 @@ export function fetchEvents(from?: string, to?: string): Promise<CalendarEvent[]
   if (to) params.set('to', to)
   const query = params.toString()
   return request(`/api/events${query ? `?${query}` : ''}`)
+}
+
+export function createEvent(payload: CreateEventPayload): Promise<CalendarEvent> {
+  return request('/api/events', {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  })
 }

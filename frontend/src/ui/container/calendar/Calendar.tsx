@@ -13,7 +13,11 @@ import {
   renderSlotLabel,
 } from '@/ui/container/calendar/CalendarRenderers.tsx'
 
-export function Calendar() {
+type CalendarProps = {
+  revision?: number
+}
+
+export function Calendar({ revision = 0 }: CalendarProps) {
   const {
     error,
     loadEvents,
@@ -26,7 +30,7 @@ export function Calendar() {
     onNext,
     onToday,
     onChangeView,
-  } = useCalendar()
+  } = useCalendar(revision)
 
   return (
     <div className="sf-calendar flex h-full min-h-0 min-w-0 w-full flex-1 flex-col bg-base-100 p-3 pr-2 md:p-4 md:pr-3">

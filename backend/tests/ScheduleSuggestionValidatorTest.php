@@ -46,17 +46,24 @@ $needsClarification['missing_fields'] = ['start_at'];
 $validated = ScheduleSuggestionValidator::validate($needsClarification);
 assert($validated['status'] === 'needs_clarification');
 
-$optionalFieldMissing = validSuggestion();
-$optionalFieldMissing['event']['description'] = null;
-$optionalFieldMissing['missing_fields'] = ['description'];
-$validated = ScheduleSuggestionValidator::validate($optionalFieldMissing);
-assert($validated['status'] === 'ready');
+$dateMissing = validSuggestion();
+$dateMissing['event']['start_at'] = null;
+$dateMissing['event']['end_at'] = null;
+$dateMissing['missing_fields'] = ['date'];
+$validated = ScheduleSuggestionValidator::validate($dateMissing);
+assert($validated['status'] === 'needs_clarification');
 
 $titleMissing = validSuggestion();
 $titleMissing['event']['title'] = '';
 $titleMissing['missing_fields'] = ['title'];
 $validated = ScheduleSuggestionValidator::validate($titleMissing);
 assert($validated['status'] === 'needs_clarification');
+
+$optionalFieldMissing = validSuggestion();
+$optionalFieldMissing['event']['description'] = null;
+$optionalFieldMissing['missing_fields'] = [];
+$validated = ScheduleSuggestionValidator::validate($optionalFieldMissing);
+assert($validated['status'] === 'ready');
 
 expectInvalid(fn (array &$data) => $data['event']['title'] = null, 'invalid title type');
 expectInvalid(fn (array &$data) => $data['event']['description'] = 1, 'invalid nullable string');
@@ -70,6 +77,25 @@ expectInvalid(function (array &$data): void {
 expectInvalid(function (array &$data): void {
     $data['missing_fields'] = [1];
 }, 'non-string missing field');
+expectInvalid(function (array &$data): void {
+    $data['missing_fields'] = ['description'];
+}, 'unsupported missing field');
+expectInvalid(function (array &$data): void {
+    $data['event']['start_at'] = null;
+    $data['missing_fields'] = [];
+}, 'null datetime without missing marker');
+expectInvalid(function (array &$data): void {
+    $data['missing_fields'] = ['start_at'];
+}, 'missing marker for present datetime');
+expectInvalid(function (array &$data): void {
+    $data['event']['start_at'] = null;
+    $data['event']['end_at'] = null;
+    $data['missing_fields'] = ['date', 'start_at', 'end_at'];
+}, 'date marker combined with datetime markers');
+expectInvalid(function (array &$data): void {
+    $data['event']['title'] = '';
+    $data['missing_fields'] = [];
+}, 'empty title without missing marker');
 expectInvalid(fn (array &$data) => $data['event']['extra'] = true, 'unexpected event key');
 
 echo "ScheduleSuggestionValidator tests passed.\n";

@@ -10,9 +10,14 @@ import { useChatScroll } from "@/hooks/useChatScroll.ts";
 import { useMultilineInput } from "@/hooks/useMultilineInput.ts";
 import { useVoiceInput } from "@/hooks/useVoiceInput.ts";
 import { Text } from "@/ui/common/Text.tsx";
+import { ScheduleConfirmationCard } from "@/ui/container/chat/ScheduleConfirmationCard.tsx";
 
-export function Chatpanel() {
-  const chat = useChat();
+type ChatpanelProps = {
+  onEventCreated?: () => void;
+};
+
+export function Chatpanel({ onEventCreated }: ChatpanelProps) {
+  const chat = useChat({ onEventCreated });
   const listRef = useChatScroll(chat.messages, chat.isSending);
   const { probeRef, isMultiline } = useMultilineInput(chat.message);
   const voice = useVoiceInput(chat.message, chat.setMessage, chat.isChatOpen);
@@ -75,8 +80,17 @@ export function Chatpanel() {
                       msg.role === "user" ? "chat-end" : "chat-start"
                     }`}
                   >
-                    <div className="chat-bubble inline-block max-w-[80%] whitespace-pre-wrap break-words bg-base-100">
-                      {msg.text}
+                    <div className="chat-bubble inline-block max-w-[80%] break-words bg-base-100">
+                      <div className="whitespace-pre-wrap">{msg.text}</div>
+                      {msg.type === "schedule_confirmation" && (
+                        <ScheduleConfirmationCard
+                          state={msg.confirmationState}
+                          onApprove={() => {
+                            void chat.approveSuggestion(msg.id);
+                          }}
+                          onCancel={() => chat.cancelSuggestion(msg.id)}
+                        />
+                      )}
                     </div>
                   </div>
                 </div>

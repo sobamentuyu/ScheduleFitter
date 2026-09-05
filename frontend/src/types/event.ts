@@ -14,3 +14,13 @@ export type CalendarEvent = {
   end: string
   allDay: boolean
 }
+
+export type CreateEventPayload = {
+  title: string
+  description: string | null
+  location: string | null
+  category: string | null
+  start_at: string
+  end_at: string
+  all_day: boolean
+}

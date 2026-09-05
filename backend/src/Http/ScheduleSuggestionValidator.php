@@ -6,6 +6,13 @@ use UnexpectedValueException;
 
 final class ScheduleSuggestionValidator
 {
+    private const ALLOWED_MISSING_FIELDS = [
+        'title',
+        'date',
+        'start_at',
+        'end_at',
+    ];
+
     private const TOP_LEVEL_KEYS = [
         'event',
         'missing_fields',
@@ -55,6 +62,7 @@ final class ScheduleSuggestionValidator
 
         self::validateEvent($data['event']);
         self::validateMissingFields($data['missing_fields']);
+        self::validateConsistency($data['event'], $data['missing_fields']);
 
         $hasRequiredFields = trim($data['event']['title']) !== ''
             && $data['event']['start_at'] !== null
@@ -131,10 +139,47 @@ final class ScheduleSuggestionValidator
                     "missing_fields[{$index}] must be a non-empty string."
                 );
             }
+
+            if (!in_array($field, self::ALLOWED_MISSING_FIELDS, true)) {
+                throw new UnexpectedValueException(
+                    "missing_fields[{$index}] contains an unsupported field."
+                );
+            }
         }
 
         if (count(array_unique($missingFields)) !== count($missingFields)) {
             throw new UnexpectedValueException('missing_fields must not contain duplicates.');
+        }
+    }
+
+    private static function validateConsistency(array $event, array $missingFields): void
+    {
+        $hasMissing = static fn (string $field): bool => in_array($field, $missingFields, true);
+        $titleMissing = trim($event['title']) === '';
+
+        if ($titleMissing !== $hasMissing('title')) {
+            throw new UnexpectedValueException(
+                'missing_fields.title must match whether event.title is empty.'
+            );
+        }
+
+        if ($hasMissing('date')) {
+            if ($event['start_at'] !== null || $event['end_at'] !== null
+                || $hasMissing('start_at') || $hasMissing('end_at')
+            ) {
+                throw new UnexpectedValueException(
+                    'A missing date requires null datetimes without start_at or end_at markers.'
+                );
+            }
+            return;
+        }
+
+        foreach (['start_at', 'end_at'] as $field) {
+            if (($event[$field] === null) !== $hasMissing($field)) {
+                throw new UnexpectedValueException(
+                    "missing_fields.{$field} must match whether event.{$field} is null."
+                );
+            }
         }
     }
 

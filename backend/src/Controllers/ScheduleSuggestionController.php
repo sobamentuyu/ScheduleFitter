@@ -50,6 +50,43 @@ final class ScheduleSuggestionController
                 $this->gemini->generateText(
                     $payload['request'],
                     $systemInstruction,
+                    [
+                        'responseMimeType' => 'application/json',
+                        'responseSchema' => [
+                            'type' => 'OBJECT',
+                            'propertyOrdering' => ['event', 'missing_fields'],
+                            'properties' => [
+                                'event' => [
+                                    'type' => 'OBJECT',
+                                    'propertyOrdering' => [
+                                        'title', 'description', 'location', 'category',
+                                        'start_at', 'end_at', 'all_day',
+                                    ],
+                                    'properties' => [
+                                        'title' => ['type' => 'STRING'],
+                                        'description' => ['type' => 'STRING', 'nullable' => true],
+                                        'location' => ['type' => 'STRING', 'nullable' => true],
+                                        'category' => ['type' => 'STRING', 'nullable' => true],
+                                        'start_at' => ['type' => 'STRING', 'nullable' => true],
+                                        'end_at' => ['type' => 'STRING', 'nullable' => true],
+                                        'all_day' => ['type' => 'BOOLEAN'],
+                                    ],
+                                    'required' => [
+                                        'title', 'description', 'location', 'category',
+                                        'start_at', 'end_at', 'all_day',
+                                    ],
+                                ],
+                                'missing_fields' => [
+                                    'type' => 'ARRAY',
+                                    'items' => [
+                                        'type' => 'STRING',
+                                        'enum' => ['title', 'date', 'start_at', 'end_at'],
+                                    ],
+                                ],
+                            ],
+                            'required' => ['event', 'missing_fields'],
+                        ],
+                    ],
                 ),
                 true,
                 512,
