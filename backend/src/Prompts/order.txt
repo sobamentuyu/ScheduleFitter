@@ -19,7 +19,6 @@ Markdown、コードブロック、説明文、追加項目を出力してはい
 
 出力形式:
 {
-  "status": "ready" または "needs_clarification",
   "event": {
     "title": "string",
     "description": "string または null",

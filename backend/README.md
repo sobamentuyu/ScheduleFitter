@@ -64,7 +64,7 @@ Dockerを使わない場合は、`backend` ディレクトリで実行します�
 composer test
 ```
 
-このテストでは、Geminiが返す予定候補について、必須キー、各値の型、ISO 8601日時、開始・終了日時の前後関係、ステータスと不足項目の整合性を検証します。
+このテストでは、Geminiが返す予定候補について、必須キー、各値の型、ISO 8601日時、開始・終了日時の前後関係、および不足項目に応じたステータスの決定を検証します。
 
 ## 認証
 
@@ -150,7 +150,7 @@ AI に対する抽出ルールを定義したテキストファイルです。
 4.  **リトライロジック**:
     API がレート制限（HTTP 429）を返した場合、最大 3 回まで、待機時間を 5 秒、10 秒、15 秒と増やしながら再試行します。
 5.  **構造化データの検証**:
-    Gemini から返されたJSONをデコードし、必須キー、各値の型、日時形式、ステータスと不足項目の整合性を検証してから `suggestion` フィールドに入れて返します。
+    Gemini から返されたJSONをデコードし、必須キー、各値の型、日時形式を検証します。`missing_fields` が空なら `ready`、1件以上なら `needs_clarification` として `status` を設定し、`suggestion` フィールドに入れて返します。
 
 ## エラーハンドリング
 
@@ -196,7 +196,7 @@ AI は `suggestion` 文字列内に以下の構造を返すように指示され
 
 | フィールド | 型 | 説明 |
 | :--- | :--- | :--- |
-| `status` | `string` | `ready` または `needs_clarification`。 |
+| `status` | `string` | バックエンドが `missing_fields` から決定する。空なら `ready`、1件以上なら `needs_clarification`。 |
 | `event.title` | `string` | イベントのタイトル。 |
 | `event.start_at` | `string \| null` | ISO 8601 形式の日時、または `null`。 |
 | `event.end_at` | `string \| null` | ISO 8601 形式の日時、または `null`。 |

@@ -7,7 +7,6 @@ use UnexpectedValueException;
 final class ScheduleSuggestionValidator
 {
     private const TOP_LEVEL_KEYS = [
-        'status',
         'event',
         'missing_fields',
     ];
@@ -20,11 +19,6 @@ final class ScheduleSuggestionValidator
         'start_at',
         'end_at',
         'all_day',
-    ];
-
-    private const STATUSES = [
-        'ready',
-        'needs_clarification',
     ];
 
     public static function validate(mixed $data): array
@@ -59,27 +53,12 @@ final class ScheduleSuggestionValidator
             );
         }
 
-        if (!is_string($data['status']) || !in_array($data['status'], self::STATUSES, true)) {
-            throw new UnexpectedValueException(
-                'status must be ready or needs_clarification.'
-            );
-        }
-
         self::validateEvent($data['event']);
         self::validateMissingFields($data['missing_fields']);
 
-        $hasMissingFields = $data['missing_fields'] !== [];
-        if ($data['status'] === 'ready' && $hasMissingFields) {
-            throw new UnexpectedValueException(
-                'ready status cannot have missing_fields.'
-            );
-        }
-
-        if ($data['status'] === 'needs_clarification' && !$hasMissingFields) {
-            throw new UnexpectedValueException(
-                'needs_clarification status requires missing_fields.'
-            );
-        }
+        $data['status'] = $data['missing_fields'] === []
+            ? 'ready'
+            : 'needs_clarification';
 
         return $data;
     }
