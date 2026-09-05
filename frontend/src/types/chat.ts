@@ -15,6 +15,7 @@ export type TextChatMessage = {
   role: ChatRole;
   text: string;
   createdAt: string;
+  imageUrl?: string;
 };
 
 export type ScheduleConfirmationMessage = {
