@@ -1,11 +1,8 @@
-import { ThemePage } from "@/ui/container/ThemePage.tsx";
-import {
-  themeNames,
-  useTheme,
-  type ThemeName,
-} from "@/contexts/ThemeContext.tsx";
-
-const labels: Record<ThemeName, string> = {
+import type { ThemeName } from "@/constants/theme";
+import { ThemeSelectButton } from "@/ui/theme/ThemeSelectButton.tsx";
+import { useTheme } from "@/hooks/useTheme.ts";
+import { themeNames } from "@/constants/theme.ts";
+export const labels: Record<ThemeName, string> = {
   blue: "Blue",
   green: "Green",
   red: "Red",
@@ -14,12 +11,12 @@ const labels: Record<ThemeName, string> = {
   orange: "Orange",
   yellow: "Yellow",
 };
-export function Theme() {
+export function ThemeSelector() {
   const { theme, setTheme } = useTheme();
   return (
     <div className="flex flex-col justify-center items-center mt-6 mx-20 gap-4 ">
       {themeNames.map((themeName) => (
-        <ThemePage
+        <ThemeSelectButton
           key={themeName}
           color={labels[themeName]}
           selected={theme === themeName}

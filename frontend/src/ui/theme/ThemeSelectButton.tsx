@@ -1,4 +1,4 @@
-import type { ThemeName } from "@/contexts/ThemeContext";
+import type { ThemeName } from "@/constants/theme";
 import { Text } from "@/ui/common/Text.tsx";
 type Props = {
   color: string;
@@ -16,7 +16,7 @@ const themeColorClass: Record<ThemeName, string> = {
   green: "#a2d7d4",
 };
 
-export const ThemePage = (props: Props) => {
+export const ThemeSelectButton = (props: Props) => {
   return (
     <button
       onClick={props.onClick}

@@ -1,31 +1,13 @@
-import {
-  createContext,
-  useContext,
-  useEffect,
-  useState,
-  type ReactNode,
-} from "react";
-
-export const themeNames = [
-  "blue",
-  "green",
-  "red",
-  "pink",
-  "purple",
-  "orange",
-  "yellow",
-] as const;
-
-export type ThemeName = (typeof themeNames)[number];
-
-const defaultTheme: ThemeName = "purple";
+import type { ThemeName } from "@/constants/theme";
+import { defaultTheme } from "@/constants/theme";
+import { createContext, useEffect, useState, type ReactNode } from "react";
 
 type ThemeContextValue = {
   theme: ThemeName;
   setTheme: (theme: ThemeName) => void;
 };
 
-const ThemeContext = createContext<ThemeContextValue | null>(null);
+export const ThemeContext = createContext<ThemeContextValue | null>(null);
 
 export function ThemeProvider({ children }: { children: ReactNode }) {
   const [theme, setTheme] = useState<ThemeName>(defaultTheme);
@@ -38,12 +20,4 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
       {children}
     </ThemeContext.Provider>
   );
-}
-
-export function useTheme() {
-  const context = useContext(ThemeContext);
-  if (!context) {
-    throw new Error("useTheme must be used within a ThemeProvider");
-  }
-  return context;
 }
