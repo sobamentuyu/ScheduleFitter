@@ -3,7 +3,7 @@ import { useAuth } from "./contexts/AuthContext";
 import { Header } from "@/ui/container/Header.tsx";
 import { Account } from "@/pages/Account.tsx";
 import { Setting } from "@/pages/Setting.tsx";
-import { Theme } from "@/pages/Theme.tsx";
+import { Theme } from "@/pages/theme.tsx";
 import { Top } from "@/pages/Top";
 import Login from "./pages/Login";
 
