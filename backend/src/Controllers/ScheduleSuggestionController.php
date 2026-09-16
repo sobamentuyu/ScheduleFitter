@@ -105,12 +105,17 @@ final class ScheduleSuggestionController
                 }
 
                 $repository ??= new EventRepository();
-                $suggestion['events'][$index]['conflicts'] =
-                    $repository->findScheduleConflicts(
-                        $userId,
-                        $event['start_at'],
-                        $event['end_at'],
-                    );
+                $conflicts = $repository->findScheduleConflicts(
+                    $userId,
+                    $event['start_at'],
+                    $event['end_at'],
+                );
+
+                $suggestion['events'][$index]['conflicts'] = $conflicts;
+
+                if ($conflicts !== []) {
+                    $suggestion['events'][$index]['status'] = 'needs_clarification';
+                }
             }
             Response::json([
                 'suggestion' => $suggestion,
