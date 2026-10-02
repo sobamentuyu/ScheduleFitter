@@ -46,7 +46,8 @@ export function Calendar({ revision = 0 }: CalendarProps) {
     const dy = e.changedTouches[0].clientY - touchStart.current.y;
     touchStart.current = null;
     if (Math.abs(dx) < 50 || Math.abs(dx) < Math.abs(dy)) return;
-    dx > 0 ? onPrev() : onNext();
+    if (dx > 0) onPrev();
+    else onNext();
   };
   return (
     <div className="sf-calendar flex h-full min-h-0 min-w-0 w-full flex-1 flex-col bg-base-100 p-3 pr-2 md:p-4 md:pr-3">
