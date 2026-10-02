@@ -37,6 +37,31 @@ final class EventRepository
         return $stmt->fetchAll();
     }
 
+    /** @return list<array<string, mixed>> */
+    public function findScheduleConflicts(
+        int $userId,
+        string $startAt,
+        string $endAt,
+    ): array {
+        $sql = '
+            SELECT id, title, start_at, end_at, all_day
+            FROM events
+            WHERE user_id = :userId
+              AND start_at < :endAt
+              AND end_at > :startAt
+            ORDER BY start_at ASC
+        ';
+
+        $stmt = $this->pdo->prepare($sql);
+        $stmt->execute([
+            'userId' => $userId,
+            'startAt' => $startAt,
+            'endAt' => $endAt,
+        ]);
+
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+
     public function findById(int $id, int $userId): ?array
     {
         $stmt = $this->pdo->prepare(

@@ -5,6 +5,7 @@ use App\Http\Request;
 use App\Http\Response;
 use App\Http\ScheduleSuggestionPayload;
 use App\Services\GeminiService;
+use App\Repositories\EventRepository;
 use InvalidArgumentException;
 use App\Http\ScheduleSuggestionValidator;
 use RuntimeException;
@@ -16,6 +17,7 @@ final class ScheduleSuggestionController
 
     public function __construct(
         private readonly GeminiService $gemini = new GeminiService(),
+        private readonly ?EventRepository $repository = null,
     ) {}
 
     private function requireUserId(): ?int
@@ -94,6 +96,27 @@ final class ScheduleSuggestionController
                 JSON_THROW_ON_ERROR
             );
             $suggestion = ScheduleSuggestionValidator::validate($suggestion);
+
+            $repository = $this->repository;
+            foreach ($suggestion['events'] as $index => $event) {
+                $suggestion['events'][$index]['conflicts'] = null;
+                if ($event['start_at'] === null || $event['end_at'] === null) {
+                    continue;
+                }
+
+                $repository ??= new EventRepository();
+                $conflicts = $repository->findScheduleConflicts(
+                    $userId,
+                    $event['start_at'],
+                    $event['end_at'],
+                );
+
+                $suggestion['events'][$index]['conflicts'] = $conflicts;
+
+                if ($conflicts !== []) {
+                    $suggestion['events'][$index]['status'] = 'needs_clarification';
+                }
+            }
             Response::json([
                 'suggestion' => $suggestion,
             ]);
