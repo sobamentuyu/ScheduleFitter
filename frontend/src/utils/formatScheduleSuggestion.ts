@@ -13,14 +13,34 @@ const FIELD_LABELS: Record<string, string> = {
   category: 'カテゴリ',
 }
 
-export function formatScheduleDateTime(value: string | null, allDay: boolean): string {
+function inclusiveAllDayEnd(end: Date): Date {
+  if (
+    end.getHours() === 0 &&
+    end.getMinutes() === 0 &&
+    end.getSeconds() === 0 &&
+    end.getMilliseconds() === 0
+  ) {
+    const display = new Date(end)
+    display.setDate(display.getDate() - 1)
+    return display
+  }
+
+  return end
+}
+
+export function formatScheduleDateTime(
+  value: string | null,
+  allDay: boolean,
+  boundary: 'start' | 'end' = 'start',
+): string {
   if (!value) return '未定'
 
   const date = new Date(value)
   if (Number.isNaN(date.getTime())) return value
 
   if (allDay) {
-    return date.toLocaleDateString('ja-JP', {
+    const display = boundary === 'end' ? inclusiveAllDayEnd(date) : date
+    return display.toLocaleDateString('ja-JP', {
       year: 'numeric',
       month: 'long',
       day: 'numeric',
@@ -62,17 +82,29 @@ function formatEvent(event: ScheduleSuggestionEvent, index: number, total: numbe
   }
 
   lines.push(`開始: ${formatScheduleDateTime(event.start_at, event.all_day)}`)
-  lines.push(`終了: ${formatScheduleDateTime(event.end_at, event.all_day)}`)
+  lines.push(`終了: ${formatScheduleDateTime(event.end_at, event.all_day, 'end')}`)
 
-  if ((event.missing_fields ?? []).length > 0) {
-    lines.push(`不足: ${formatMissingFields(event.missing_fields)}`)
-  }
+  lines.push(...formatMissingNotices(event.missing_fields ?? []))
 
   return lines.join('\n')
 }
 
 export function formatMissingFields(fields: string[]): string {
   return fields.map((field) => FIELD_LABELS[field] ?? field).join('、')
+}
+
+export function formatMissingNotices(fields: string[]): string[] {
+  const notices: string[] = []
+  const others = fields.filter((field) => field !== 'date')
+
+  if (others.length > 0) {
+    notices.push(`不足: ${formatMissingFields(others)}`)
+  }
+  if (fields.includes('date')) {
+    notices.push('日時を入力してください')
+  }
+
+  return notices
 }
 
 export function formatScheduleSuggestionHeader(

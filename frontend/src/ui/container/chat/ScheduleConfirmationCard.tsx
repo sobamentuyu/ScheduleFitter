@@ -1,7 +1,10 @@
 import type { ConfirmationState } from '@/types/chat.ts';
 import type { ScheduleSuggestionEvent } from '@/types/scheduleSuggestion.ts';
 import { useScheduleConfirmation } from '@/hooks/useScheduleConfirmation.ts';
-import { formatMissingFields, formatScheduleDateTime } from '@/utils/formatScheduleSuggestion.ts';
+import {
+	formatMissingNotices,
+	formatScheduleDateTime,
+} from '@/utils/formatScheduleSuggestion.ts';
 
 type ScheduleConfirmationCardProps = {
 	state: ConfirmationState;
@@ -99,17 +102,21 @@ export function ScheduleConfirmationCard({
 											内容: {event.description}
 										</span>
 									)}
+									{event.all_day && (
+										<span className="mt-0.5 block text-xs opacity-80">終日</span>
+									)}
 									<span className="mt-0.5 block text-xs opacity-80">
 										開始: {formatScheduleDateTime(event.start_at, event.all_day)}
 									</span>
 									<span className="mt-0.5 block text-xs opacity-80">
-										終了: {formatScheduleDateTime(event.end_at, event.all_day)}
+										終了: {formatScheduleDateTime(event.end_at, event.all_day, 'end')}
 									</span>
-									{!ready && event.missing_fields.length > 0 && (
-										<span className="mt-0.5 block text-xs text-error">
-											不足: {formatMissingFields(event.missing_fields)}
-										</span>
-									)}
+									{!ready &&
+										formatMissingNotices(event.missing_fields).map((notice) => (
+											<span key={notice} className="mt-0.5 block text-xs text-error">
+												{notice}
+											</span>
+										))}
 									{event.conflicts && event.conflicts.length > 0 && (
 										<span className="mt-1 block text-xs text-warning">
 											既存の予定と時間が重複しています：
