@@ -1,23 +1,23 @@
-import FullCalendar from '@fullcalendar/react'
-import dayGridPlugin from '@fullcalendar/daygrid'
-import timeGridPlugin from '@fullcalendar/timegrid'
-import jaLocale from '@fullcalendar/core/locales/ja'
-import { useCalendar } from '@/hooks/useCalendar.ts'
-import { Text } from '@/ui/common/Text.tsx'
-import { CalendarToolbar } from '@/ui/container/calendar/Toolbar.tsx'
-import { EventDetailPopup } from '@/ui/container/calendar/EventDetailPopup.tsx'
+import FullCalendar from "@fullcalendar/react";
+import dayGridPlugin from "@fullcalendar/daygrid";
+import timeGridPlugin from "@fullcalendar/timegrid";
+import jaLocale from "@fullcalendar/core/locales/ja";
+import { useCalendar } from "@/hooks/useCalendar.ts";
+import { Text } from "@/ui/common/Text.tsx";
+import { CalendarToolbar } from "@/ui/container/calendar/Toolbar.tsx";
+import { EventDetailPopup } from "@/ui/container/calendar/EventDetailPopup.tsx";
 import {
   dayCellClassNames,
   renderDayCell,
   renderDayHeader,
   renderEvent,
   renderSlotLabel,
-} from '@/ui/container/calendar/CalendarRenderers.tsx'
+} from "@/ui/container/calendar/CalendarRenderers.tsx";
 
 type CalendarProps = {
-  revision?: number
-}
-
+  revision?: number;
+};
+import { useRef } from "react";
 export function Calendar({ revision = 0 }: CalendarProps) {
   const {
     error,
@@ -34,8 +34,20 @@ export function Calendar({ revision = 0 }: CalendarProps) {
     onNext,
     onToday,
     onChangeView,
-  } = useCalendar(revision)
-
+  } = useCalendar(revision);
+  const touchStart = useRef<{ x: number; y: number } | null>(null);
+  const onTouchStart = (e: React.TouchEvent) => {
+    if (e.touches.length !== 1) return;
+    touchStart.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+  };
+  const onTouchEnd = (e: React.TouchEvent) => {
+    if (!touchStart.current || e.changedTouches.length !== 1) return;
+    const dx = e.changedTouches[0].clientX - touchStart.current.x;
+    const dy = e.changedTouches[0].clientY - touchStart.current.y;
+    touchStart.current = null;
+    if (Math.abs(dx) < 50 || Math.abs(dx) < Math.abs(dy)) return;
+    dx > 0 ? onPrev() : onNext();
+  };
   return (
     <div className="sf-calendar flex h-full min-h-0 min-w-0 w-full flex-1 flex-col bg-base-100 p-3 pr-2 md:p-4 md:pr-3">
       {error && (
@@ -55,7 +67,12 @@ export function Calendar({ revision = 0 }: CalendarProps) {
         onChangeView={onChangeView}
       />
 
-      <div ref={wrapRef} className="min-h-0 flex-1 overflow-hidden">
+      <div
+        onTouchStart={onTouchStart}
+        onTouchEnd={onTouchEnd}
+        ref={wrapRef}
+        className="min-h-0 flex-1 overflow-hidden"
+      >
         <FullCalendar
           ref={calendarRef}
           plugins={[dayGridPlugin, timeGridPlugin]}
@@ -66,8 +83,8 @@ export function Calendar({ revision = 0 }: CalendarProps) {
           expandRows
           fixedWeekCount={false}
           slotLabelFormat={{
-            hour: 'numeric',
-            minute: '2-digit',
+            hour: "numeric",
+            minute: "2-digit",
             hour12: false,
             omitZeroMinute: true,
           }}
@@ -92,5 +109,5 @@ export function Calendar({ revision = 0 }: CalendarProps) {
 
       <EventDetailPopup event={selectedEvent} onClose={closeEventDetail} />
     </div>
-  )
+  );
 }
