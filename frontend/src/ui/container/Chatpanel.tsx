@@ -24,7 +24,6 @@ export function Chatpanel({ onEventCreated }: ChatpanelProps) {
   const isComposerStacked = isMultiline || chat.pendingImage !== null;
   const voice = useVoiceInput(chat.message, chat.setMessage, chat.isChatOpen);
   const imageInputRef = useRef<HTMLInputElement>(null);
-
   return (
     <>
       <aside
@@ -99,7 +98,9 @@ export function Chatpanel({ onEventCreated }: ChatpanelProps) {
                         />
                       )}
                       {msg.text !== "" && (
-                        <span className={imageUrl ? "block px-3 py-2" : undefined}>
+                        <span
+                          className={imageUrl ? "block px-3 py-2" : undefined}
+                        >
                           {msg.text}
                         </span>
                       )}
@@ -184,9 +185,7 @@ export function Chatpanel({ onEventCreated }: ChatpanelProps) {
             >
               <button
                 type="button"
-                aria-label={
-                  voice.listening ? "音声入力を停止" : "音声入力"
-                }
+                aria-label={voice.listening ? "音声入力を停止" : "音声入力"}
                 aria-pressed={voice.listening}
                 disabled={
                   !voice.browserSupportsSpeechRecognition ||

@@ -1,37 +1,46 @@
 export type CalendarEvent = {
-  id: number
-  user_id: number
-  title: string
-  description: string | null
-  location: string | null
-  category: string | null
-  start_at: string
-  end_at: string
-  all_day: boolean
-  created_at: string | null
-  updated_at: string | null
-  start: string
-  end: string
-  allDay: boolean
-}
+  id: number;
+  user_id: number;
+  title: string;
+  description: string | null;
+  location: string | null;
+  category: string | null;
+  start_at: string;
+  end_at: string;
+  all_day: boolean;
+  created_at: string | null;
+  updated_at: string | null;
+  start: string;
+  end: string;
+  allDay: boolean;
+};
 
 export type CreateEventPayload = {
-  title: string
-  description: string | null
-  location: string | null
-  category: string | null
-  start_at: string
-  end_at: string
-  all_day: boolean
-}
+  title: string;
+  description: string | null;
+  location: string | null;
+  category: string | null;
+  start_at: string;
+  end_at: string;
+  all_day: boolean;
+};
 
 export type EventDetail = {
-  id: string
-  title: string
-  start: Date | null
-  end: Date | null
-  allDay: boolean
-  description: string | null
-  location: string | null
-  category: string | null
-}
+  id: string;
+  title: string;
+  start: Date | null;
+  end: Date | null;
+  allDay: boolean;
+  description: string | null;
+  location: string | null;
+  category: string | null;
+};
+export type EditEventPayload = {
+  title: string;
+  description: string | null;
+  location: string | null;
+  category: string | null;
+  start_at: string;
+  end_at: string;
+  all_day: boolean;
+};
