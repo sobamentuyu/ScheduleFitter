@@ -3,6 +3,7 @@ import {
   ImageIcon,
   MicrophoneIcon,
   PlusIcon,
+  StopIcon,
   XIcon,
 } from "@phosphor-icons/react";
 import { useRef } from "react";
@@ -195,11 +196,19 @@ export function Chatpanel({ onEventCreated }: ChatpanelProps) {
                 onClick={voice.toggleListening}
                 className="btn btn-circle btn-ghost btn-xs"
               >
-                <MicrophoneIcon
-                  size={18}
-                  weight={voice.listening ? "fill" : "light"}
-                  color="var(--color-primary-content)"
-                />
+                {voice.listening ? (
+                  <StopIcon
+                    size={18}
+                    weight="fill"
+                    color="var(--color-primary-content)"
+                  />
+                ) : (
+                  <MicrophoneIcon
+                    size={18}
+                    weight="light"
+                    color="var(--color-primary-content)"
+                  />
+                )}
               </button>
               <input
                 ref={imageInputRef}
@@ -239,7 +248,9 @@ export function Chatpanel({ onEventCreated }: ChatpanelProps) {
               chat.isSending ||
               voice.listening
             }
-            className="btn btn-circle btn-lg bg-[var(--color-chat)]"
+            className={`btn btn-circle btn-lg ${
+              voice.listening ? "bg-gray-400" : "bg-[var(--color-chat)]"
+            }`}
           >
             <ArrowUpIcon
               size={30}
