@@ -34,6 +34,7 @@ export function Calendar({ revision = 0 }: CalendarProps) {
     onNext,
     onToday,
     onChangeView,
+    onDeleteEvent,
   } = useCalendar(revision);
   const touchStart = useRef<{ x: number; y: number } | null>(null);
   const onTouchStart = (e: React.TouchEvent) => {
@@ -49,6 +50,7 @@ export function Calendar({ revision = 0 }: CalendarProps) {
     if (dx > 0) onPrev();
     else onNext();
   };
+
   return (
     <div className="sf-calendar flex h-full min-h-0 min-w-0 w-full flex-1 flex-col bg-base-100 p-3 pr-2 md:p-4 md:pr-3">
       {error && (
@@ -105,10 +107,15 @@ export function Calendar({ revision = 0 }: CalendarProps) {
           dayHeaderContent={renderDayHeader}
           eventContent={renderEvent}
           slotLabelContent={renderSlotLabel}
+          editable={true}
         />
       </div>
 
-      <EventDetailPopup event={selectedEvent} onClose={closeEventDetail} />
+      <EventDetailPopup
+        event={selectedEvent}
+        onClose={closeEventDetail}
+        onDelete={onDeleteEvent}
+      />
     </div>
   );
 }
