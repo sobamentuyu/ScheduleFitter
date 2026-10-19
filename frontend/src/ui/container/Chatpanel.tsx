@@ -100,7 +100,9 @@ export function Chatpanel({ onEventCreated }: ChatpanelProps) {
                         />
                       )}
                       {msg.text !== "" && (
-                        <span className={imageUrl ? "block px-3 py-2" : undefined}>
+                        <span
+                          className={imageUrl ? "block px-3 py-2" : undefined}
+                        >
                           {msg.text}
                         </span>
                       )}
@@ -169,6 +171,20 @@ export function Chatpanel({ onEventCreated }: ChatpanelProps) {
                 className="col-start-1 row-start-1 h-full max-h-40 min-h-10 w-full resize-none overflow-y-auto bg-transparent px-4 py-2 text-base leading-6 caret-chat outline-none"
                 value={chat.message}
                 onChange={(e) => chat.setMessage(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key !== "Enter" || e.shiftKey) return;
+                  if (e.nativeEvent.isComposing) return;
+                  e.preventDefault();
+                  if (
+                    (chat.message.trim() === "" &&
+                      chat.pendingImage === null) ||
+                    chat.isSending ||
+                    voice.listening
+                  )
+                    return;
+                  voice.endSession();
+                  void chat.sendMessage();
+                }}
               />
               <div
                 aria-hidden
@@ -185,9 +201,7 @@ export function Chatpanel({ onEventCreated }: ChatpanelProps) {
             >
               <button
                 type="button"
-                aria-label={
-                  voice.listening ? "音声入力を停止" : "音声入力"
-                }
+                aria-label={voice.listening ? "音声入力を停止" : "音声入力"}
                 aria-pressed={voice.listening}
                 disabled={
                   !voice.browserSupportsSpeechRecognition ||
