@@ -5,6 +5,17 @@ import type {
 } from '@/types/scheduleSuggestion.ts'
 import { timeRangesConflict } from '@/utils/timeRangeConflict.ts'
 
+/** 通常の予定追加と同じ半開区間で、サーバ結果から真の衝突だけ残す */
+export function filterActiveConflicts(
+	startAt: string,
+	endAt: string,
+	conflicts: ConflictingEvent[],
+): ConflictingEvent[] {
+	return conflicts.filter((conflict) =>
+		timeRangesConflict(startAt, endAt, conflict.start_at, conflict.end_at),
+	)
+}
+
 export type KeptSide = 'new' | 'existing'
 
 /** 優先しなかった側の扱い */

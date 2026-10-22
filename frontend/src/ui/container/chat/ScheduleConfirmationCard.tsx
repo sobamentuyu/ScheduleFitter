@@ -9,6 +9,7 @@ import { ConflictResolutionPanel } from '@/ui/container/chat/ConflictResolutionP
 import {
 	formatMissingNotices,
 	formatScheduleDateTime,
+	formatScheduleSuggestionHeader,
 } from '@/utils/formatScheduleSuggestion.ts'
 
 type ScheduleConfirmationCardProps = {
@@ -62,23 +63,22 @@ export function ScheduleConfirmationCard({
 
 	if (state === 'approved') {
 		return (
-			<p className="mt-3 border-t border-base-300 pt-3 text-sm font-medium text-success">
-				予定を追加しました
-			</p>
+			<p className="text-sm font-medium text-success">予定を追加しました</p>
 		)
 	}
 
 	if (state === 'cancelled') {
 		return (
-			<p className="mt-3 border-t border-base-300 pt-3 text-sm opacity-70">
-				追加をキャンセルしました
-			</p>
+			<p className="text-sm opacity-70">追加をキャンセルしました</p>
 		)
 	}
 
+	const statusHeader = formatScheduleSuggestionHeader(workingEvents)
+
 	if (hasUnresolvedConflicts && currentNew && currentExisting) {
 		return (
-			<div className="mt-3 border-t border-base-300 pt-3">
+			<div>
+				<p className="mb-3 text-sm font-medium">{statusHeader}</p>
 				<ConflictResolutionPanel
 					progress={progress}
 					newEvent={currentNew}
@@ -111,7 +111,7 @@ export function ScheduleConfirmationCard({
 	}
 
 	return (
-		<div className="mt-3 border-t border-base-300 pt-3">
+		<div>
 			<div className="mb-2 flex items-center justify-between gap-2">
 				<p className="text-sm font-medium">
 					{readyCount > 0

@@ -6,8 +6,10 @@ import {
 	buildConflictQueue,
 	cloneSuggestionEvents,
 	collectOriginalConflicts,
+	filterActiveConflicts,
 	filterPendingChangesForSelected,
 	movedSideConflictQuery,
+	refreshSuggestionEventStatus,
 	resolveExistingConflict,
 	type ConflictTimeDraft,
 	type ExistingOverride,
@@ -138,15 +140,44 @@ export function useConflictResolution(events: ScheduleSuggestionEvent[]) {
 				currentPair.conflict.id,
 				deletedIds,
 			)
-			const conflicts = await fetchEventConflicts(query)
-			if (conflicts.length > 0) {
-				setError('ずらした時間がほかの予定と重なっています')
-				return false
+			// 通常の予定追加と同じ半開区間判定で隣接（12:00終了と12:00開始）は非衝突
+			const remaining = filterActiveConflicts(
+				draft.start_at,
+				draft.end_at,
+				await fetchEventConflicts(query),
+			)
+
+			if (keptSide === 'new') {
+				if (remaining.length > 0) {
+					setError('ずらした時間がほかの予定と重なっています')
+					return false
+				}
+
+				setExistingOverrides(result.existingOverrides)
+				setDeletedIds(result.deletedIds)
+				setWorkingEvents(result.workingEvents)
+				setKeptSide(null)
+				setAction('reschedule')
+				setDraft(null)
+				setError(null)
+				return true
 			}
+
+			// 新規側をずらした場合は、サーバ確認結果を通常追加と同じ衝突リストとして反映する
+			const nextEvents = result.workingEvents.map((event, index) => {
+				if (index !== currentPair.eventIndex) return event
+				return refreshSuggestionEventStatus({
+					...event,
+					start_at: draft.start_at,
+					end_at: draft.end_at,
+					all_day: draft.all_day,
+					conflicts: remaining,
+				})
+			})
 
 			setExistingOverrides(result.existingOverrides)
 			setDeletedIds(result.deletedIds)
-			setWorkingEvents(result.workingEvents)
+			setWorkingEvents(nextEvents)
 			setKeptSide(null)
 			setAction('reschedule')
 			setDraft(null)
