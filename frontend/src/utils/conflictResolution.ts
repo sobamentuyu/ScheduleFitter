@@ -39,6 +39,7 @@ export type ExistingOverride = ConflictTimeDraft & {
 
 export type ApplyResolutionInput = {
 	workingEvents: ScheduleSuggestionEvent[]
+	knownExistings: Record<number, ConflictingEvent>
 	existingOverrides: Record<number, ExistingOverride>
 	deletedIds: number[]
 	pair: ConflictPair
@@ -80,12 +81,18 @@ export function refreshSuggestionEventStatus(
 	}
 }
 
+/** 情報が揃っている予定の衝突だけ解決対象にする（不足ありは選択画面で不足表示） */
 export function buildConflictQueue(
 	events: ScheduleSuggestionEvent[],
 ): ConflictPair[] {
-	return events.flatMap((event, eventIndex) =>
-		(event.conflicts ?? []).map((conflict) => ({ eventIndex, conflict })),
-	)
+	return events.flatMap((event, eventIndex) => {
+		if ((event.missing_fields ?? []).length > 0) return []
+		if (event.start_at === null || event.end_at === null) return []
+		return (event.conflicts ?? []).map((conflict) => ({
+			eventIndex,
+			conflict,
+		}))
+	})
 }
 
 export function resolveExistingConflict(
@@ -128,6 +135,20 @@ export function collectOriginalConflicts(
 	return originals
 }
 
+/** サーバで新たに見つかった既存予定を既知セットに合流する */
+export function mergeKnownExistings(
+	known: Record<number, ConflictingEvent>,
+	incoming: ConflictingEvent[],
+): Record<number, ConflictingEvent> {
+	if (incoming.length === 0) return known
+	const next = { ...known }
+	for (const conflict of incoming) {
+		if (next[conflict.id] !== undefined) continue
+		next[conflict.id] = { ...conflict }
+	}
+	return next
+}
+
 /**
  * 追加対象だけが、変更前の既存予定とまだ重なるときに限り
  * その既存の update / delete を残す。
@@ -162,34 +183,49 @@ export function filterPendingChangesForSelected(
 	}
 }
 
-/** 削除予定・override 適用後の時刻で conflicts を刈り込む */
-export function pruneEventConflicts(
+/**
+ * 移動予約（override）・削除を反映した「これから保存するカレンダー」上で、
+ * 各新規予定の conflicts を作り直す。
+ * （元の conflicts を刈るだけでは、別ペアで動かした既存との新しい重なりを検出できない）
+ */
+export function recomputeEventConflicts(
 	events: ScheduleSuggestionEvent[],
+	knownExistings: Record<number, ConflictingEvent>,
 	overrides: Record<number, ExistingOverride>,
 	deletedIds: number[] = [],
 ): ScheduleSuggestionEvent[] {
 	const deleted = new Set(deletedIds)
+	const effectiveExistings = Object.values(knownExistings)
+		.filter((existing) => !deleted.has(existing.id))
+		.map((existing) => {
+			const resolved = resolveExistingConflict(existing, overrides)
+			return {
+				id: existing.id,
+				title: resolved.title,
+				location: resolved.location,
+				start_at: resolved.start_at,
+				end_at: resolved.end_at,
+				all_day: resolved.all_day,
+			} satisfies ConflictingEvent
+		})
 
 	return events.map((event) => {
 		if (event.start_at === null || event.end_at === null) {
 			return refreshSuggestionEventStatus(event)
 		}
 
-		const remaining =
-			event.conflicts?.filter((conflict) => {
-				if (deleted.has(conflict.id)) return false
-				const other = resolveExistingConflict(conflict, overrides)
-				return timeRangesConflict(
-					event.start_at as string,
-					event.end_at as string,
-					other.start_at,
-					other.end_at,
-				)
-			}) ?? []
+		const conflicts = effectiveExistings.filter((existing) =>
+			timeRangesConflict(
+				event.start_at as string,
+				event.end_at as string,
+				existing.start_at,
+				existing.end_at,
+			),
+		)
 
 		return refreshSuggestionEventStatus({
 			...event,
-			conflicts: remaining,
+			conflicts,
 		})
 	})
 }
@@ -199,6 +235,7 @@ export function applyConflictResolution(
 ): ApplyResolutionSuccess | ApplyResolutionFailure {
 	const {
 		workingEvents,
+		knownExistings,
 		existingOverrides,
 		deletedIds,
 		pair,
@@ -226,8 +263,9 @@ export function applyConflictResolution(
 
 			return {
 				ok: true,
-				workingEvents: pruneEventConflicts(
+				workingEvents: recomputeEventConflicts(
 					workingEvents,
+					knownExistings,
 					restOverrides,
 					nextDeleted,
 				),
@@ -241,8 +279,9 @@ export function applyConflictResolution(
 		)
 		return {
 			ok: true,
-			workingEvents: pruneEventConflicts(
+			workingEvents: recomputeEventConflicts(
 				withoutNew,
+				knownExistings,
 				existingOverrides,
 				deletedIds,
 			),
@@ -380,8 +419,9 @@ export function applyConflictResolution(
 
 	return {
 		ok: true,
-		workingEvents: pruneEventConflicts(
+		workingEvents: recomputeEventConflicts(
 			withUpdatedTimes,
+			knownExistings,
 			nextOverrides,
 			deletedIds,
 		),

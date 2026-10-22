@@ -1,6 +1,9 @@
 import { useMemo, useState } from 'react'
 import { fetchEventConflicts } from '@/api/events.ts'
-import type { ScheduleSuggestionEvent } from '@/types/scheduleSuggestion.ts'
+import type {
+	ConflictingEvent,
+	ScheduleSuggestionEvent,
+} from '@/types/scheduleSuggestion.ts'
 import {
 	applyConflictResolution,
 	buildConflictQueue,
@@ -8,8 +11,9 @@ import {
 	collectOriginalConflicts,
 	filterActiveConflicts,
 	filterPendingChangesForSelected,
+	mergeKnownExistings,
 	movedSideConflictQuery,
-	refreshSuggestionEventStatus,
+	recomputeEventConflicts,
 	resolveExistingConflict,
 	type ConflictTimeDraft,
 	type ExistingOverride,
@@ -22,6 +26,9 @@ export function useConflictResolution(events: ScheduleSuggestionEvent[]) {
 		cloneSuggestionEvents(events),
 	)
 	const [originalConflicts] = useState(() => collectOriginalConflicts(events))
+	const [knownExistings, setKnownExistings] = useState<
+		Record<number, ConflictingEvent>
+	>(() => collectOriginalConflicts(events))
 	const [existingOverrides, setExistingOverrides] = useState<
 		Record<number, ExistingOverride>
 	>({})
@@ -33,7 +40,7 @@ export function useConflictResolution(events: ScheduleSuggestionEvent[]) {
 	const [isChecking, setIsChecking] = useState(false)
 
 	const queue = useMemo(() => buildConflictQueue(workingEvents), [workingEvents])
-	const [initialTotal] = useState(() => buildConflictQueue(events).length)
+	const [completedCount, setCompletedCount] = useState(0)
 	const currentPair = queue[0] ?? null
 	const hasUnresolvedConflicts = currentPair !== null
 
@@ -44,12 +51,10 @@ export function useConflictResolution(events: ScheduleSuggestionEvent[]) {
 		? resolveExistingConflict(currentPair.conflict, existingOverrides)
 		: null
 
-	const resolvedCount = Math.max(0, initialTotal - queue.length)
+	// 解決の途中で新しい衝突が増えても追えるように、完了数＋残件数で総数を出す
 	const progress = {
-		current: hasUnresolvedConflicts
-			? Math.min(resolvedCount + 1, initialTotal)
-			: resolvedCount,
-		total: initialTotal,
+		current: hasUnresolvedConflicts ? completedCount + 1 : completedCount,
+		total: completedCount + queue.length,
 	}
 
 	const pendingChangesFor = (selected: ScheduleSuggestionEvent[]) =>
@@ -99,12 +104,20 @@ export function useConflictResolution(events: ScheduleSuggestionEvent[]) {
 		setError(null)
 	}
 
+	const resetPairUi = () => {
+		setKeptSide(null)
+		setAction('reschedule')
+		setDraft(null)
+		setError(null)
+	}
+
 	const confirmResolution = async (): Promise<boolean> => {
 		if (!currentPair || !keptSide || isChecking) return false
 		if (action === 'reschedule' && !draft) return false
 
 		const result = applyConflictResolution({
 			workingEvents,
+			knownExistings,
 			existingOverrides,
 			deletedIds,
 			pair: currentPair,
@@ -122,10 +135,8 @@ export function useConflictResolution(events: ScheduleSuggestionEvent[]) {
 			setExistingOverrides(result.existingOverrides)
 			setDeletedIds(result.deletedIds)
 			setWorkingEvents(result.workingEvents)
-			setKeptSide(null)
-			setAction('reschedule')
-			setDraft(null)
-			setError(null)
+			setCompletedCount((count) => count + 1)
+			resetPairUi()
 			return true
 		}
 
@@ -140,15 +151,15 @@ export function useConflictResolution(events: ScheduleSuggestionEvent[]) {
 				currentPair.conflict.id,
 				deletedIds,
 			)
-			// 通常の予定追加と同じ半開区間判定で隣接（12:00終了と12:00開始）は非衝突
-			const remaining = filterActiveConflicts(
+			// カレンダー上の未知の予定はサーバで確認。隣接は通常追加と同じ半開区間で除外。
+			const fromServer = filterActiveConflicts(
 				draft.start_at,
 				draft.end_at,
 				await fetchEventConflicts(query),
 			)
 
 			if (keptSide === 'new') {
-				if (remaining.length > 0) {
+				if (fromServer.length > 0) {
 					setError('ずらした時間がほかの予定と重なっています')
 					return false
 				}
@@ -156,32 +167,29 @@ export function useConflictResolution(events: ScheduleSuggestionEvent[]) {
 				setExistingOverrides(result.existingOverrides)
 				setDeletedIds(result.deletedIds)
 				setWorkingEvents(result.workingEvents)
-				setKeptSide(null)
-				setAction('reschedule')
-				setDraft(null)
-				setError(null)
+				setCompletedCount((count) => count + 1)
+				resetPairUi()
 				return true
 			}
 
-			// 新規側をずらした場合は、サーバ確認結果を通常追加と同じ衝突リストとして反映する
-			const nextEvents = result.workingEvents.map((event, index) => {
-				if (index !== currentPair.eventIndex) return event
-				return refreshSuggestionEventStatus({
-					...event,
-					start_at: draft.start_at,
-					end_at: draft.end_at,
-					all_day: draft.all_day,
-					conflicts: remaining,
-				})
-			})
+			// 新規をずらしたあと:
+			// 1) サーバで新たに見つかった既存を既知に合流
+			// 2) override 込みのカレンダーで conflicts を再計算
+			// → 手順3で動かした既存Aと、手順4で動かした新規Yの重なりをここで検出する
+			const nextKnown = mergeKnownExistings(knownExistings, fromServer)
+			const nextEvents = recomputeEventConflicts(
+				result.workingEvents,
+				nextKnown,
+				result.existingOverrides,
+				result.deletedIds,
+			)
 
+			setKnownExistings(nextKnown)
 			setExistingOverrides(result.existingOverrides)
 			setDeletedIds(result.deletedIds)
 			setWorkingEvents(nextEvents)
-			setKeptSide(null)
-			setAction('reschedule')
-			setDraft(null)
-			setError(null)
+			setCompletedCount((count) => count + 1)
+			resetPairUi()
 			return true
 		} catch (error) {
 			setError(
