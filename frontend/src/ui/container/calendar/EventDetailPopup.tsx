@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react'
+import { type ReactNode } from "react";
 import {
   ClockIcon,
   MapPinIcon,
@@ -10,16 +10,18 @@ import { Text } from '@/ui/common/Text.tsx'
 import type { EventDetail } from '@/types/event.ts'
 import { formatEventDateTime } from '@/utils/formatEventDateTime.ts'
 import { useEventDetailPopup } from '@/hooks/useEventDetailPopup.ts'
+import { Trash } from "@/ui/container/trash";
 
 export function EventDetailPopup({
   event,
   onClose,
+  onDelete,
 }: {
-  event: EventDetail | null
-  onClose: () => void
+  event: EventDetail | null;
+  onClose: () => void;
+  onDelete: (event: EventDetail) => void;
 }) {
-  const { dialogRef, closeDialog } = useEventDetailPopup(event)
-
+  const { dialogRef, closeDialog } = useEventDetailPopup(event);
   return (
     <dialog
       ref={dialogRef}
@@ -40,7 +42,7 @@ export function EventDetailPopup({
 
           <div id="event-detail-title">
             <Text as="h3" size="lg" weight="medium" className="pr-10">
-              {event.title.trim() || '無題の予定'}
+              {event.title.trim() || "無題の予定"}
             </Text>
           </div>
 
@@ -58,13 +60,20 @@ export function EventDetailPopup({
               {event.description}
             </DetailRow>
           </dl>
+          <Trash
+            event={event}
+            onDelete={(deleteEvent) => {
+              onDelete(deleteEvent);
+              closeDialog();
+            }}
+          />
         </div>
       )}
       <form method="dialog" className="modal-backdrop">
         <button type="submit">閉じる</button>
       </form>
     </dialog>
-  )
+  );
 }
 
 function DetailRow({
@@ -72,12 +81,12 @@ function DetailRow({
   label,
   children,
 }: {
-  icon: ReactNode
-  label: string
-  children: ReactNode
+  icon: ReactNode;
+  label: string;
+  children: ReactNode;
 }) {
-  const value = typeof children === 'string' ? children.trim() : children
-  const isEmpty = value == null || value === ''
+  const value = typeof children === "string" ? children.trim() : children;
+  const isEmpty = value == null || value === "";
 
   return (
     <div className="flex items-start gap-3">
@@ -91,12 +100,12 @@ function DetailRow({
         <Text
           as="p"
           size="sm"
-          color={isEmpty ? 'muted' : 'base'}
+          color={isEmpty ? "muted" : "base"}
           className="whitespace-pre-wrap break-words"
         >
-          {isEmpty ? '未入力' : value}
+          {isEmpty ? "未入力" : value}
         </Text>
       </div>
     </div>
-  )
+  );
 }

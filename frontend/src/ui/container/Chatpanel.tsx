@@ -25,7 +25,6 @@ export function Chatpanel({ onEventCreated }: ChatpanelProps) {
   const isComposerStacked = isMultiline || chat.pendingImage !== null;
   const voice = useVoiceInput(chat.message, chat.setMessage, chat.isChatOpen);
   const imageInputRef = useRef<HTMLInputElement>(null);
-
   return (
     <>
       <aside
