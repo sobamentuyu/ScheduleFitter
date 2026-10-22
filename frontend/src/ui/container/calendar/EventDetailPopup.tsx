@@ -1,4 +1,4 @@
-import { useState, type ReactNode } from "react";
+import { type ReactNode } from "react";
 import {
   ClockIcon,
   MapPinIcon,
@@ -48,39 +48,16 @@ export function EventDetailPopup({
 
           <dl className="mt-4 flex flex-col gap-3">
             <DetailRow icon={<ClockIcon size={20} />} label="日時">
-              {formatEventSchedule(event.start, event.end, event.allDay) || (
-                <input
-                  className="input input-bordered input-primary"
-                  placeholder="日時を入力"
-                />
-              )}
+              {formatEventSchedule(event.start, event.end, event.allDay)}
             </DetailRow>
             <DetailRow icon={<MapPinIcon size={20} />} label="場所">
-              {event.location || (
-                <input
-                  type="text"
-                  placeholder="場所を入力"
-                  className="input input-bordered input-primary h-7 max-w-320 whitespace-pre-wrap"
-                />
-              )}
+              {event.location}
             </DetailRow>
             <DetailRow icon={<TagIcon size={20} />} label="カテゴリ">
-              {event.category || (
-                <input
-                  type="text"
-                  placeholder="カテゴリを入力"
-                  className="input input-bordered input-primary h-7 max-w-320 whitespace-pre-wrap"
-                />
-              )}
+              {event.category}
             </DetailRow>
             <DetailRow icon={<NoteIcon size={20} />} label="詳細">
-              {event.description || (
-                <input
-                  type="text"
-                  placeholder="詳細を入力"
-                  className="input input-bordered input-primary h-20 max-w-320 row-start-1 col-start-1 break-words whitespace-pre-wrap"
-                />
-              )}
+              {event.description}
             </DetailRow>
           </dl>
           <Trash
