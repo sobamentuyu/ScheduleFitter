@@ -41,10 +41,10 @@ export function Chatpanel({ onEventCreated }: ChatpanelProps) {
             type="button"
             aria-label="チャットを閉じる"
             onClick={() => chat.setIsChatOpen(false)}
-            className="btn btn-circle btn-ghost btn-xs"
+            className="btn btn-circle btn-ghost btn-md"
           >
             <XIcon
-              size={32}
+              size={50}
               color="var(--color-primary-content)"
               weight="light"
             />
@@ -163,12 +163,12 @@ export function Chatpanel({ onEventCreated }: ChatpanelProps) {
               </div>
             )}
             <div
-              className={`grid min-w-0 ${isComposerStacked ? "w-full" : "flex-1"}`}
+              className={`grid min-w-0 ${isComposerStacked ? "w-full" : "flex-1"} flez flez-col content-center`}
             >
               <textarea
                 aria-label="メッセージ"
                 rows={1}
-                className="col-start-1 row-start-1 h-full max-h-40 min-h-10 w-full resize-none overflow-y-auto bg-transparent px-4 py-2 text-base leading-6 caret-chat outline-none"
+                className="col-start-1 row-start-1 h-full max-h-40 min-h-12 w-full resize-none overflow-y-auto bg-transparent px-4 py-3 text-base leading-6 caret-chat outline-none "
                 value={chat.message}
                 onChange={(e) => chat.setMessage(e.target.value)}
                 onKeyDown={(e) => {
@@ -188,7 +188,7 @@ export function Chatpanel({ onEventCreated }: ChatpanelProps) {
               />
               <div
                 aria-hidden
-                className="invisible col-start-1 row-start-1 max-h-40 min-h-10 overflow-hidden whitespace-pre-wrap break-words px-4 py-2 text-base leading-6"
+                className="invisible col-start-1 row-start-1 max-h-40 min-h-12 overflow-hidden whitespace-pre-wrap break-words px-4 py-3 text-base leading-6"
               >
                 {chat.message || " "}
                 {"\n"}
@@ -197,7 +197,7 @@ export function Chatpanel({ onEventCreated }: ChatpanelProps) {
             <div
               className={`flex shrink-0 items-center justify-end gap-1 pr-2 ${
                 isComposerStacked ? "pb-1" : "py-1"
-              }`}
+              } `}
             >
               <button
                 type="button"
@@ -208,17 +208,17 @@ export function Chatpanel({ onEventCreated }: ChatpanelProps) {
                   !voice.isMicrophoneAvailable
                 }
                 onClick={voice.toggleListening}
-                className="btn btn-circle btn-ghost btn-xs"
+                className="btn btn-circle btn-ghost btn-xs "
               >
                 {voice.listening ? (
                   <StopIcon
-                    size={18}
+                    size={32}
                     weight="fill"
                     color="var(--color-primary-content)"
                   />
                 ) : (
                   <MicrophoneIcon
-                    size={18}
+                    size={32}
                     weight="light"
                     color="var(--color-primary-content)"
                   />
@@ -243,7 +243,7 @@ export function Chatpanel({ onEventCreated }: ChatpanelProps) {
                 className="btn btn-circle btn-ghost btn-xs"
               >
                 <ImageIcon
-                  size={18}
+                  size={32}
                   weight="light"
                   color="var(--color-primary-content)"
                 />
