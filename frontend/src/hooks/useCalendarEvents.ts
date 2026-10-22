@@ -1,9 +1,9 @@
-import { useState } from 'react'
-import type { EventInput } from '@fullcalendar/core'
-import { fetchEvents } from '@/api/events.ts'
-import type { CalendarEvent } from '@/types/event.ts'
+import { useState } from "react";
+import type { EventInput } from "@fullcalendar/core";
+import { fetchEvents, deleteEvent } from "@/api/events.ts";
+import type { CalendarEvent } from "@/types/event.ts";
 
-type FetchInfo = { startStr: string; endStr: string }
+type FetchInfo = { startStr: string; endStr: string };
 
 function toFullCalendarEvent(event: CalendarEvent): EventInput {
   return {
@@ -17,11 +17,11 @@ function toFullCalendarEvent(event: CalendarEvent): EventInput {
       location: event.location,
       category: event.category,
     },
-  }
+  };
 }
 
 export function useCalendarEvents() {
-  const [error, setError] = useState<string | null>(null)
+  const [error, setError] = useState<string | null>(null);
 
   const loadEvents = async (
     fetchInfo: FetchInfo,
@@ -29,15 +29,28 @@ export function useCalendarEvents() {
     failureCallback: (error: Error) => void,
   ) => {
     try {
-      const events = await fetchEvents(fetchInfo.startStr, fetchInfo.endStr)
-      setError(null)
-      successCallback(events.map(toFullCalendarEvent))
+      const events = await fetchEvents(fetchInfo.startStr, fetchInfo.endStr);
+      setError(null);
+      successCallback(events.map(toFullCalendarEvent));
     } catch (e) {
-      const message = e instanceof Error ? e.message : '予定の取得に失敗しました'
-      setError(message)
-      failureCallback(new Error(message))
+      const message =
+        e instanceof Error ? e.message : "予定の取得に失敗しました";
+      setError(message);
+      failureCallback(new Error(message));
     }
-  }
+  };
 
-  return { error, loadEvents }
+  const removeEvent = async (id: string) => {
+    try {
+      await deleteEvent(id);
+      setError(null);
+    } catch (e) {
+      const message =
+        e instanceof Error ? e.message : "予定の削除に失敗しました";
+      setError(message);
+      throw e;
+    }
+  };
+
+  return { error, loadEvents, removeEvent };
 }
