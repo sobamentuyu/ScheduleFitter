@@ -59,10 +59,14 @@ $router->get('/', static function () {
 });
 
 $router->group('/api', function (Router $api) use ($events, $scheduleSuggestions) {
-    $api->post('/schedule-suggestions', [$scheduleSuggestions, 'create']);
+    $api->group('/schedule-suggestions', function (Router $r) use ($scheduleSuggestions) {
+        $r->post('/', [$scheduleSuggestions, 'create']);
+        $r->post('/approve', [$scheduleSuggestions, 'approve']);
+    });
 
     $api->group('/events', function (Router $r) use ($events) {
         $r->get('/', [$events, 'index']);
+        $r->post('/conflicts', [$events, 'conflicts']);
         $r->get('/{id}', [$events, 'show']);
         $r->post('/', [$events, 'store']);
         $r->put('/{id}', [$events, 'update']);

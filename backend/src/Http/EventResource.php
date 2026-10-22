@@ -29,6 +29,24 @@ final class EventResource
         ];
     }
 
+    /**
+     * @param array<string, mixed> $row
+     * @return array{id: int, title: string, start_at: string, end_at: string, all_day: bool, location: string|null}
+     */
+    public static function conflictFrom(array $row): array
+    {
+        $location = $row['location'] ?? null;
+
+        return [
+            'id' => (int) $row['id'],
+            'title' => (string) $row['title'],
+            'start_at' => (string) self::toIso($row['start_at']),
+            'end_at' => (string) self::toIso($row['end_at']),
+            'all_day' => filter_var($row['all_day'], FILTER_VALIDATE_BOOLEAN),
+            'location' => is_string($location) && $location !== '' ? $location : null,
+        ];
+    }
+
     private static function toIso(mixed $value): ?string
     {
         if ($value === null || $value === '') {

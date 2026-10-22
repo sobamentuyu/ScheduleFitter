@@ -1,24 +1,53 @@
-import type { ConfirmationState } from '@/types/chat.ts';
-import type { ScheduleSuggestionEvent } from '@/types/scheduleSuggestion.ts';
-import { useScheduleConfirmation } from '@/hooks/useScheduleConfirmation.ts';
+import type { ConfirmationState } from '@/types/chat.ts'
+import type {
+	ExistingEventUpdate,
+	ScheduleSuggestionEvent,
+} from '@/types/scheduleSuggestion.ts'
+import { useConflictResolution } from '@/hooks/useConflictResolution.ts'
+import { useScheduleConfirmation } from '@/hooks/useScheduleConfirmation.ts'
+import { ConflictResolutionPanel } from '@/ui/container/chat/ConflictResolutionPanel.tsx'
 import {
 	formatMissingNotices,
 	formatScheduleDateTime,
-} from '@/utils/formatScheduleSuggestion.ts';
+} from '@/utils/formatScheduleSuggestion.ts'
 
 type ScheduleConfirmationCardProps = {
-	state: ConfirmationState;
-	events: ScheduleSuggestionEvent[];
-	onApprove: (events: ScheduleSuggestionEvent[]) => void;
-	onCancel: () => void;
-};
+	state: ConfirmationState
+	events: ScheduleSuggestionEvent[]
+	errorMessage?: string | null
+	onApprove: (
+		events: ScheduleSuggestionEvent[],
+		existingUpdates: ExistingEventUpdate[],
+		existingDeletes: number[],
+	) => void
+	onCancel: () => void
+}
 
 export function ScheduleConfirmationCard({
 	state,
 	events,
+	errorMessage = null,
 	onApprove,
 	onCancel,
 }: ScheduleConfirmationCardProps) {
+	const {
+		workingEvents,
+		hasUnresolvedConflicts,
+		currentNew,
+		currentExisting,
+		keptSide,
+		action,
+		draft,
+		error,
+		progress,
+		pendingChangesFor,
+		isChecking,
+		selectKeptSide,
+		selectAction,
+		updateDraft,
+		confirmResolution,
+	} = useConflictResolution(events)
+
 	const {
 		selectedEvents,
 		readyCount,
@@ -27,14 +56,16 @@ export function ScheduleConfirmationCard({
 		isSelected,
 		toggle,
 		toggleSelectAll,
-	} = useScheduleConfirmation(events, state);
+	} = useScheduleConfirmation(workingEvents, state)
+
+	const resolutionDisabled = isSaving || isChecking
 
 	if (state === 'approved') {
 		return (
 			<p className="mt-3 border-t border-base-300 pt-3 text-sm font-medium text-success">
 				予定を追加しました
 			</p>
-		);
+		)
 	}
 
 	if (state === 'cancelled') {
@@ -42,14 +73,50 @@ export function ScheduleConfirmationCard({
 			<p className="mt-3 border-t border-base-300 pt-3 text-sm opacity-70">
 				追加をキャンセルしました
 			</p>
-		);
+		)
+	}
+
+	if (hasUnresolvedConflicts && currentNew && currentExisting) {
+		return (
+			<div className="mt-3 border-t border-base-300 pt-3">
+				<ConflictResolutionPanel
+					progress={progress}
+					newEvent={currentNew}
+					existingEvent={currentExisting}
+					keptSide={keptSide}
+					action={action}
+					draft={draft}
+					error={error}
+					disabled={resolutionDisabled}
+					confirmLabel={isChecking ? '確認中…' : 'この解決で進む'}
+					onSelectKeptSide={selectKeptSide}
+					onSelectAction={selectAction}
+					onDraftChange={updateDraft}
+					onConfirm={() => {
+						void confirmResolution()
+					}}
+				/>
+				<div className="flex justify-end">
+					<button
+						type="button"
+						className="btn btn-ghost btn-sm"
+						disabled={resolutionDisabled}
+						onClick={onCancel}
+					>
+						キャンセル
+					</button>
+				</div>
+			</div>
+		)
 	}
 
 	return (
 		<div className="mt-3 border-t border-base-300 pt-3">
 			<div className="mb-2 flex items-center justify-between gap-2">
 				<p className="text-sm font-medium">
-					{readyCount > 0 ? '追加する予定を選んでください' : '追加できる予定がまだありません'}
+					{readyCount > 0
+						? '追加する予定を選んでください'
+						: '追加できる予定がまだありません'}
 				</p>
 				{readyCount > 1 && (
 					<button
@@ -64,10 +131,10 @@ export function ScheduleConfirmationCard({
 			</div>
 
 			<ul className="mb-3 flex flex-col gap-2">
-				{events.map((event, i) => {
-					const ready = event.status === 'ready';
-					const checked = isSelected(i);
-					const title = event.title.trim() || 'タイトル未定';
+				{workingEvents.map((event, i) => {
+					const ready = event.status === 'ready'
+					const checked = isSelected(i)
+					const title = event.title.trim() || 'タイトル未定'
 
 					return (
 						<li key={`${event.title}-${event.start_at ?? 'none'}-${i}`}>
@@ -95,7 +162,9 @@ export function ScheduleConfirmationCard({
 									</span>
 									<span className="block font-medium">{title}</span>
 									{event.location && (
-										<span className="mt-0.5 block text-xs opacity-80">場所: {event.location}</span>
+										<span className="mt-0.5 block text-xs opacity-80">
+											場所: {event.location}
+										</span>
 									)}
 									{event.description && (
 										<span className="mt-0.5 block text-xs opacity-80">
@@ -109,30 +178,29 @@ export function ScheduleConfirmationCard({
 										開始: {formatScheduleDateTime(event.start_at, event.all_day)}
 									</span>
 									<span className="mt-0.5 block text-xs opacity-80">
-										終了: {formatScheduleDateTime(event.end_at, event.all_day, 'end')}
+										終了:{' '}
+										{formatScheduleDateTime(event.end_at, event.all_day, 'end')}
 									</span>
 									{!ready &&
 										formatMissingNotices(event.missing_fields).map((notice) => (
-											<span key={notice} className="mt-0.5 block text-xs text-error">
+											<span
+												key={notice}
+												className="mt-0.5 block text-xs text-error"
+											>
 												{notice}
 											</span>
 										))}
-									{event.conflicts && event.conflicts.length > 0 && (
-										<span className="mt-1 block text-xs text-warning">
-											既存の予定と時間が重複しています：
-											{event.conflicts.map((conflict) => conflict.title).join('、')}
-										</span>
-									)}
 								</span>
 							</label>
 						</li>
-					);
+					)
 				})}
 			</ul>
 
 			{state === 'failed' && (
 				<p role="alert" className="mb-3 text-sm text-error">
-					予定を追加できませんでした。もう一度お試しください。
+					{errorMessage?.trim() ||
+						'予定を追加できませんでした。もう一度お試しください。'}
 				</p>
 			)}
 
@@ -149,7 +217,10 @@ export function ScheduleConfirmationCard({
 					type="button"
 					className="btn btn-primary btn-sm"
 					disabled={isSaving || selectedEvents.length === 0}
-					onClick={() => onApprove(selectedEvents)}
+					onClick={() => {
+						const { updates, deletes } = pendingChangesFor(selectedEvents)
+						onApprove(selectedEvents, updates, deletes)
+					}}
 				>
 					{isSaving
 						? '追加中…'
@@ -159,5 +230,5 @@ export function ScheduleConfirmationCard({
 				</button>
 			</div>
 		</div>
-	);
+	)
 }

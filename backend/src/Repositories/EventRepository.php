@@ -37,29 +37,62 @@ final class EventRepository
         return $stmt->fetchAll();
     }
 
-    /** @return list<array<string, mixed>> */
-    public function findScheduleConflicts(
+    /**
+     * @param list<int> $excludeIds
+     * @return list<array<string, mixed>>
+     */
+    public function findConflictingEvents(
         int $userId,
         string $startAt,
         string $endAt,
+        array $excludeIds = [],
     ): array {
         $sql = '
-            SELECT id, title, start_at, end_at, all_day
+            SELECT id, title, start_at, end_at, all_day, location
             FROM events
             WHERE user_id = :userId
               AND start_at < :endAt
               AND end_at > :startAt
-            ORDER BY start_at ASC
         ';
-
-        $stmt = $this->pdo->prepare($sql);
-        $stmt->execute([
+        $params = [
             'userId' => $userId,
             'startAt' => $startAt,
             'endAt' => $endAt,
-        ]);
+        ];
+
+        if ($excludeIds !== []) {
+            $placeholders = [];
+            foreach (array_values($excludeIds) as $index => $excludeId) {
+                $key = 'exclude_' . $index;
+                $placeholders[] = ':' . $key;
+                $params[$key] = $excludeId;
+            }
+            $sql .= ' AND id NOT IN (' . implode(', ', $placeholders) . ')';
+        }
+
+        $sql .= ' ORDER BY start_at ASC';
+
+        $stmt = $this->pdo->prepare($sql);
+        $stmt->execute($params);
 
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+
+    public function beginTransaction(): void
+    {
+        $this->pdo->beginTransaction();
+    }
+
+    public function commit(): void
+    {
+        $this->pdo->commit();
+    }
+
+    public function rollBack(): void
+    {
+        if ($this->pdo->inTransaction()) {
+            $this->pdo->rollBack();
+        }
     }
 
     public function findById(int $id, int $userId): ?array

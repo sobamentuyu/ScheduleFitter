@@ -108,11 +108,21 @@ export function formatMissingNotices(fields: string[]): string[] {
 }
 
 export function formatScheduleSuggestionHeader(
-  totalCount: number,
-  readyCount: number,
+  events: ScheduleSuggestionEvent[],
 ): string {
+  const totalCount = events.length
+
   if (totalCount === 0) {
     return '予定を読み取れませんでした。画像や文章に予定の情報があるか確認してください。'
+  }
+
+  const readyCount = events.filter((event) => event.status === 'ready').length
+  const hasConflicts = events.some(
+    (event) => event.conflicts !== null && event.conflicts.length > 0,
+  )
+
+  if (hasConflicts) {
+    return '既存の予定と時間が重なっています'
   }
 
   if (readyCount === 0) {
@@ -132,13 +142,11 @@ export function formatScheduleSuggestion(
   suggestion: ScheduleSuggestion,
 ): string {
   const events = Array.isArray(suggestion.events) ? suggestion.events : []
+  const header = formatScheduleSuggestionHeader(events)
 
   if (events.length === 0) {
-    return formatScheduleSuggestionHeader(0, 0)
+    return header
   }
-
-  const readyCount = events.filter((event) => event.status === 'ready').length
-  const header = formatScheduleSuggestionHeader(events.length, readyCount)
 
   return [header, '', events.map((event, index) => formatEvent(event, index, events.length)).join('\n\n')].join('\n')
 }

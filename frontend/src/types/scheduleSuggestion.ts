@@ -1,5 +1,15 @@
 export type ScheduleEventStatus = 'ready' | 'needs_clarification';
 
+/** 提案と時間が重なっている、既存の event */
+export type ConflictingEvent = {
+	id: number;
+	title: string;
+	start_at: string;
+	end_at: string;
+	all_day: boolean;
+	location: string | null;
+};
+
 export type ScheduleSuggestionEvent = {
 	title: string;
 	description: string | null;
@@ -10,17 +20,16 @@ export type ScheduleSuggestionEvent = {
 	all_day: boolean;
 	missing_fields: string[];
 	status: ScheduleEventStatus;
-	conflicts:
-		| {
-				id: number;
-				title: string;
-				start_at: string;
-				end_at: string;
-				all_day: boolean;
-		  }[]
-		| null;
+	conflicts: ConflictingEvent[] | null;
 };
 
 export type ScheduleSuggestion = {
 	events: ScheduleSuggestionEvent[];
+};
+
+export type ExistingEventUpdate = {
+	id: number;
+	start_at: string;
+	end_at: string;
+	all_day: boolean;
 };
