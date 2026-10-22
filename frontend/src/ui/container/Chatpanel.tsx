@@ -98,22 +98,29 @@ export function Chatpanel({ onEventCreated }: ChatpanelProps) {
                           className="block max-h-52 max-w-full rounded-[1.1rem] object-contain"
                         />
                       )}
-                      {msg.text !== "" && (
-                        <span
-                          className={imageUrl ? "block px-3 py-2" : undefined}
-                        >
-                          {msg.text}
-                        </span>
-                      )}
-                      {msg.type === "schedule_confirmation" && (
+                      {msg.type === "schedule_confirmation" ? (
                         <ScheduleConfirmationCard
                           state={msg.confirmationState}
                           events={msg.suggestion.events}
-                          onApprove={(selected) =>
-                            void chat.approveSuggestion(msg.id, selected)
+                          errorMessage={msg.errorMessage}
+                          onApprove={(selected, existingUpdates, existingDeletes) =>
+                            void chat.approveSuggestion(
+                              msg.id,
+                              selected,
+                              existingUpdates,
+                              existingDeletes,
+                            )
                           }
                           onCancel={() => chat.cancelSuggestion(msg.id)}
                         />
+                      ) : (
+                        msg.text !== "" && (
+                          <span
+                            className={imageUrl ? "block px-3 py-2" : undefined}
+                          >
+                            {msg.text}
+                          </span>
+                        )
                       )}
                     </div>
                   </div>

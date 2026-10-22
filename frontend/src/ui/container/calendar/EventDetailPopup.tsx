@@ -5,11 +5,11 @@ import {
   NoteIcon,
   TagIcon,
   XIcon,
-} from "@phosphor-icons/react";
-import { Text } from "@/ui/common/Text.tsx";
-import type { EventDetail } from "@/types/event.ts";
-import { formatEventSchedule } from "@/utils/formatEventSchedule.ts";
-import { useEventDetailPopup } from "@/hooks/useEventDetailPopup.ts";
+} from '@phosphor-icons/react'
+import { Text } from '@/ui/common/Text.tsx'
+import type { EventDetail } from '@/types/event.ts'
+import { formatEventDateTime } from '@/utils/formatEventDateTime.ts'
+import { useEventDetailPopup } from '@/hooks/useEventDetailPopup.ts'
 import { Trash } from "@/ui/container/trash";
 
 export function EventDetailPopup({
@@ -48,7 +48,7 @@ export function EventDetailPopup({
 
           <dl className="mt-4 flex flex-col gap-3">
             <DetailRow icon={<ClockIcon size={20} />} label="日時">
-              {formatEventSchedule(event.start, event.end, event.allDay)}
+              {formatEventDateTime(event.start, event.end, event.allDay)}
             </DetailRow>
             <DetailRow icon={<MapPinIcon size={20} />} label="場所">
               {event.location}

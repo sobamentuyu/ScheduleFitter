@@ -23,7 +23,7 @@ try {
     }
     $repository = new EventRepository($pdo);
     $cases = [
-        ['overlap', 1, '2026-09-15T10:30:00+09:00', '2026-09-15T11:30:00+09:00', [1]],
+        ['conflict', 1, '2026-09-15T10:30:00+09:00', '2026-09-15T11:30:00+09:00', [1]],
         ['same interval', 1, '2026-09-15T10:00:00+09:00', '2026-09-15T11:00:00+09:00', [1]],
         ['contains', 1, '2026-09-15T09:00:00+09:00', '2026-09-15T12:00:00+09:00', [1]],
         ['contained', 1, '2026-09-15T10:15:00+09:00', '2026-09-15T10:45:00+09:00', [1]],
@@ -37,13 +37,27 @@ try {
         ['timezone', 1, '2026-09-15T01:30:00Z', '2026-09-15T02:30:00Z', [1]],
     ];
     foreach ($cases as [$name, $userId, $start, $end, $expected]) {
-        $rows = $repository->findScheduleConflicts($userId, $start, $end);
+        $rows = $repository->findConflictingEvents($userId, $start, $end);
         $actual = array_map('intval', array_column($rows, 'id'));
         if ($actual !== $expected) {
             throw new RuntimeException($name . ': unexpected conflicts ' . json_encode($actual));
         }
     }
-    echo count($cases) . " schedule conflict database tests passed.\n";
+
+    $excludeCases = [
+        ['exclude self', 1, '2026-09-15T10:30:00+09:00', '2026-09-15T11:30:00+09:00', [1], []],
+        ['exclude other keeps self', 1, '2026-09-15T10:30:00+09:00', '2026-09-15T11:30:00+09:00', [3], [1]],
+        ['exclude empty same as none', 1, '2026-09-15T10:30:00+09:00', '2026-09-15T11:30:00+09:00', [], [1]],
+    ];
+    foreach ($excludeCases as [$name, $userId, $start, $end, $excludeIds, $expected]) {
+        $rows = $repository->findConflictingEvents($userId, $start, $end, $excludeIds);
+        $actual = array_map('intval', array_column($rows, 'id'));
+        if ($actual !== $expected) {
+            throw new RuntimeException($name . ': unexpected conflicts ' . json_encode($actual));
+        }
+    }
+
+    echo (count($cases) + count($excludeCases)) . " event conflict database tests passed.\n";
 } finally {
     $pdo->rollBack();
 }

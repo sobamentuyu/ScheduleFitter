@@ -1,4 +1,20 @@
-import type { ScheduleSuggestion } from '@/types/scheduleSuggestion.ts'
+import type { CalendarEvent, CreateEventPayload } from '@/types/event.ts'
+import type {
+  ExistingEventUpdate,
+  ScheduleSuggestion,
+} from '@/types/scheduleSuggestion.ts'
+
+export type ApproveScheduleSuggestionPayload = {
+  creates: CreateEventPayload[]
+  updates: ExistingEventUpdate[]
+  deletes: number[]
+}
+
+export type ApproveScheduleSuggestionResult = {
+  created: CalendarEvent[]
+  updated_count: number
+  deleted_count: number
+}
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8080'
 
@@ -90,4 +106,41 @@ export async function createScheduleSuggestionFromImage(
   })
 
   return readSuggestionResponse(res)
+}
+
+export async function approveScheduleSuggestion(
+  payload: ApproveScheduleSuggestionPayload,
+): Promise<ApproveScheduleSuggestionResult> {
+  const res = await fetch(`${API_BASE}/api/schedule-suggestions/approve`, {
+    method: 'POST',
+    credentials: 'include',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(payload),
+  })
+
+  const body = (await res.json().catch(() => null)) as
+    | (ApproveScheduleSuggestionResult & { error?: string })
+    | null
+
+  if (!res.ok) {
+    if (res.status === 401) {
+      throw new Error('ログインが必要です')
+    }
+    if (res.status === 422) {
+      throw new Error(body?.error ?? '予定を保存できませんでした')
+    }
+    throw new Error(body?.error ?? '予定を保存できませんでした')
+  }
+
+  if (!body || !Array.isArray(body.created)) {
+    throw new Error('予定を保存できませんでした')
+  }
+
+  return {
+    created: body.created,
+    updated_count: body.updated_count ?? 0,
+    deleted_count: body.deleted_count ?? 0,
+  }
 }

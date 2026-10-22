@@ -35,7 +35,7 @@ function displayAllDayEnd(start: Date, end: Date): Date {
   return endDate
 }
 
-export function formatEventSchedule(
+export function formatEventDateTime(
   start: Date | null,
   end: Date | null,
   allDay: boolean,

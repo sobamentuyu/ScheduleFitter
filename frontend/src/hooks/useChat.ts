@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
-import { createEvent } from "@/api/events.ts";
 import {
+  approveScheduleSuggestion,
   createScheduleSuggestion,
   createScheduleSuggestionFromImage,
   validateScheduleImage,
@@ -12,6 +12,7 @@ import type {
   TextChatMessage,
 } from "@/types/chat.ts";
 import type {
+  ExistingEventUpdate,
   ScheduleSuggestion,
   ScheduleSuggestionEvent,
 } from "@/types/scheduleSuggestion.ts";
@@ -82,8 +83,7 @@ export function useChat({ onEventCreated }: UseChatOptions = {}) {
 
   const appendSuggestion = (suggestion: ScheduleSuggestion) => {
     const events = Array.isArray(suggestion.events) ? suggestion.events : [];
-    const readyCount = events.filter((event) => event.status === "ready").length;
-    const responseText = formatScheduleSuggestionHeader(events.length, readyCount);
+    const responseText = formatScheduleSuggestionHeader(events);
 
     if (events.length > 0) {
       const confirmation: ScheduleConfirmationMessage = {
@@ -177,6 +177,8 @@ export function useChat({ onEventCreated }: UseChatOptions = {}) {
   const approveSuggestion = async (
     messageId: string,
     events: ScheduleSuggestionEvent[],
+    existingUpdates: ExistingEventUpdate[] = [],
+    existingDeletes: number[] = [],
   ) => {
     if (approvingIdsRef.current.has(messageId)) return;
 
@@ -186,44 +188,50 @@ export function useChat({ onEventCreated }: UseChatOptions = {}) {
     );
     if (!confirmation || !["pending", "failed"].includes(confirmation.confirmationState)) return;
 
-    const selectedEvents = events.flatMap((event) => {
+    const creates = events.flatMap((event) => {
       if (event.status !== "ready") return [];
       const { start_at, end_at } = event;
       if (start_at === null || end_at === null) return [];
-      return [{ event, start_at, end_at }];
+      return [{
+        title: event.title,
+        description: event.description,
+        location: event.location,
+        category: event.category,
+        start_at,
+        end_at,
+        all_day: event.all_day,
+      }];
     });
 
-    if (selectedEvents.length === 0) return;
+    if (creates.length === 0) return;
 
     approvingIdsRef.current.add(messageId);
     setMessages((prev) => prev.map((item) =>
       item.id === messageId && item.type === "schedule_confirmation"
-        ? { ...item, confirmationState: "saving" }
+        ? { ...item, confirmationState: "saving", errorMessage: null }
         : item,
     ));
 
     try {
-      await Promise.all(selectedEvents.map(({ event, start_at, end_at }) =>
-        createEvent({
-          title: event.title,
-          description: event.description,
-          location: event.location,
-          category: event.category,
-          start_at,
-          end_at,
-          all_day: event.all_day,
-        }),
-      ));
+      await approveScheduleSuggestion({
+        creates,
+        updates: existingUpdates,
+        deletes: existingDeletes,
+      });
       setMessages((prev) => prev.map((item) =>
         item.id === messageId && item.type === "schedule_confirmation"
-          ? { ...item, confirmationState: "approved" }
+          ? { ...item, confirmationState: "approved", errorMessage: null }
           : item,
       ));
       onEventCreated?.();
-    } catch {
+    } catch (error) {
+      const message =
+        error instanceof Error && error.message.trim() !== ""
+          ? error.message
+          : "予定を追加できませんでした。もう一度お試しください。";
       setMessages((prev) => prev.map((item) =>
         item.id === messageId && item.type === "schedule_confirmation"
-          ? { ...item, confirmationState: "failed" }
+          ? { ...item, confirmationState: "failed", errorMessage: message }
           : item,
       ));
     } finally {

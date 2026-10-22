@@ -1,4 +1,5 @@
-import type { CalendarEvent, CreateEventPayload } from "@/types/event";
+import type { CalendarEvent, CreateEventPayload } from "@/types/event"
+import type { ConflictingEvent } from "@/types/scheduleSuggestion.ts"
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL ?? "http://localhost:8080";
 
@@ -51,4 +52,19 @@ export async function deleteEvent(id: string): Promise<void> {
     method: "DELETE",
   });
   console.log("deleting id:", id);
+}
+
+export function fetchEventConflicts(payload: {
+  start_at: string
+  end_at: string
+  exclude_ids?: number[]
+}): Promise<ConflictingEvent[]> {
+  return request<{ conflicts: ConflictingEvent[] }>('/api/events/conflicts', {
+    method: 'POST',
+    body: JSON.stringify({
+      start_at: payload.start_at,
+      end_at: payload.end_at,
+      exclude_ids: payload.exclude_ids ?? [],
+    }),
+  }).then((body) => body.conflicts)
 }

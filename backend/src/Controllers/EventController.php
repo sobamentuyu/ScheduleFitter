@@ -1,6 +1,7 @@
 <?php
 namespace App\Controllers;
 
+use App\Http\EventConflictCheckPayload;
 use App\Http\EventPayload;
 use App\Http\EventResource;
 use App\Http\Request;
@@ -57,6 +58,34 @@ final class EventController
         }
 
         Response::json(EventResource::from($row));
+    }
+
+    public function conflicts(Request $request): void
+    {
+        $userId = $this->requireUserId();
+        if ($userId === null) {
+            return;
+        }
+
+        try {
+            $payload = EventConflictCheckPayload::parse($request->body);
+            $rows = $this->repository->findConflictingEvents(
+                $userId,
+                $payload['start_at'],
+                $payload['end_at'],
+                $payload['exclude_ids'],
+            );
+            Response::json([
+                'conflicts' => array_map(
+                    EventResource::conflictFrom(...),
+                    $rows,
+                ),
+            ]);
+        } catch (InvalidArgumentException $e) {
+            Response::error($e->getMessage(), 422);
+        } catch (Exception $e) {
+            Response::error('重複の確認に失敗しました', 500, ['detail' => $e->getMessage()]);
+        }
     }
 
     public function store(Request $request): void

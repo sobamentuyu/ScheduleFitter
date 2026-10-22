@@ -1,13 +1,16 @@
 <?php
 namespace App\Controllers;
 
+use App\Http\EventResource;
 use App\Http\Request;
 use App\Http\Response;
+use App\Http\ScheduleSuggestionApprovePayload;
 use App\Http\ScheduleSuggestionPayload;
-use App\Services\GeminiService;
-use App\Repositories\EventRepository;
-use InvalidArgumentException;
 use App\Http\ScheduleSuggestionValidator;
+use App\Repositories\EventRepository;
+use App\Services\GeminiService;
+use DateTimeImmutable;
+use InvalidArgumentException;
 use RuntimeException;
 
 final class ScheduleSuggestionController
@@ -48,7 +51,7 @@ final class ScheduleSuggestionController
                 throw new RuntimeException('Gemini instruction file could not be loaded.');
             }
 
-            $now = new \DateTimeImmutable('now', new \DateTimeZone('Asia/Tokyo'));
+            $now = new DateTimeImmutable('now', new \DateTimeZone('Asia/Tokyo'));
 
             $systemInstruction .= "\n\nTrusted reference context:\n"
                 . 'reference_datetime: ' . $now->format(\DateTimeInterface::ATOM) . "\n"
@@ -105,15 +108,19 @@ final class ScheduleSuggestionController
                 }
 
                 $repository ??= new EventRepository();
-                $conflicts = $repository->findScheduleConflicts(
+                $conflicts = $repository->findConflictingEvents(
                     $userId,
                     $event['start_at'],
                     $event['end_at'],
                 );
 
-                $suggestion['events'][$index]['conflicts'] = $conflicts;
+                $normalizedConflicts = array_map(
+                    EventResource::conflictFrom(...),
+                    $conflicts,
+                );
+                $suggestion['events'][$index]['conflicts'] = $normalizedConflicts;
 
-                if ($conflicts !== []) {
+                if ($normalizedConflicts !== []) {
                     $suggestion['events'][$index]['status'] = 'needs_clarification';
                 }
             }
@@ -131,5 +138,107 @@ final class ScheduleSuggestionController
                 'detail' => $exception->getMessage(),
             ]);
         }
+    }
+
+    public function approve(Request $request): void
+    {
+        $userId = $this->requireUserId();
+        if ($userId === null) {
+            return;
+        }
+
+        $repository = $this->repository ?? new EventRepository();
+
+        try {
+            $payload = ScheduleSuggestionApprovePayload::parse($request->body);
+            $repository->beginTransaction();
+
+            foreach ($payload['deletes'] as $deleteId) {
+                if (!$repository->delete($deleteId, $userId)) {
+                    throw new InvalidArgumentException('削除対象の予定が見つかりません');
+                }
+            }
+
+            foreach ($payload['updates'] as $update) {
+                $row = $repository->update($update['id'], $userId, [
+                    'start_at' => $update['start_at'],
+                    'end_at' => $update['end_at'],
+                    'all_day' => $update['all_day'],
+                ]);
+                if ($row === null) {
+                    throw new InvalidArgumentException('更新対象の予定が見つかりません');
+                }
+            }
+
+            foreach ($payload['updates'] as $update) {
+                $conflicts = $repository->findConflictingEvents(
+                    $userId,
+                    $update['start_at'],
+                    $update['end_at'],
+                    [$update['id']],
+                );
+                if ($conflicts !== []) {
+                    throw new InvalidArgumentException('既存の予定と時間が重なっています');
+                }
+            }
+
+            $creates = $payload['creates'];
+            for ($i = 0, $count = count($creates); $i < $count; $i++) {
+                for ($j = $i + 1; $j < $count; $j++) {
+                    if ($this->timeRangesConflict(
+                        $creates[$i]['start_at'],
+                        $creates[$i]['end_at'],
+                        $creates[$j]['start_at'],
+                        $creates[$j]['end_at'],
+                    )) {
+                        throw new InvalidArgumentException('追加する予定同士の時間が重なっています');
+                    }
+                }
+            }
+
+            $created = [];
+            foreach ($creates as $create) {
+                $conflicts = $repository->findConflictingEvents(
+                    $userId,
+                    $create['start_at'],
+                    $create['end_at'],
+                );
+                if ($conflicts !== []) {
+                    throw new InvalidArgumentException('既存の予定と時間が重なっています');
+                }
+
+                $create['user_id'] = $userId;
+                $created[] = EventResource::from($repository->create($create));
+            }
+
+            $repository->commit();
+            Response::json([
+                'created' => $created,
+                'updated_count' => count($payload['updates']),
+                'deleted_count' => count($payload['deletes']),
+            ], 201);
+        } catch (InvalidArgumentException $exception) {
+            $repository->rollBack();
+            Response::error($exception->getMessage(), 422);
+        } catch (\Throwable $exception) {
+            $repository->rollBack();
+            Response::error('予定の保存に失敗しました', 500, [
+                'detail' => $exception->getMessage(),
+            ]);
+        }
+    }
+
+    private function timeRangesConflict(
+        string $startA,
+        string $endA,
+        string $startB,
+        string $endB,
+    ): bool {
+        $aStart = new DateTimeImmutable($startA);
+        $aEnd = new DateTimeImmutable($endA);
+        $bStart = new DateTimeImmutable($startB);
+        $bEnd = new DateTimeImmutable($endB);
+
+        return $aStart < $bEnd && $aEnd > $bStart;
     }
 }

@@ -25,6 +25,8 @@ export type ScheduleConfirmationMessage = {
   text: string;
   suggestion: ScheduleSuggestion;
   confirmationState: ConfirmationState;
+  /** approve API 失敗時のサーバメッセージ */
+  errorMessage?: string | null;
   createdAt: string;
 };
 
