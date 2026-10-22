@@ -43,7 +43,7 @@ type UseChatOptions = {
 };
 
 export function useChat({ onEventCreated }: UseChatOptions = {}) {
-  const [isChatOpen, setIsChatOpen] = useState(false);
+  const [isChatOpen, setIsChatOpen] = useState(true);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [message, setMessage] = useState("");
   const [pendingImage, setPendingImage] = useState<PendingImage | null>(null);
