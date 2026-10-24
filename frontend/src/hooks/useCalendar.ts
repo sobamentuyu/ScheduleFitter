@@ -1,12 +1,15 @@
 import { useEffect, useRef, useState } from "react";
 import FullCalendar from "@fullcalendar/react";
+import type { DateClickArg } from "@fullcalendar/interaction";
 import type { DatesSetArg, EventClickArg } from "@fullcalendar/core";
 import { useCalendarEvents } from "@/hooks/useCalendarEvents.ts";
+import { useIsMobile } from "@/hooks/useIsMobile.ts";
 import { VIEWS, type CalendarView } from "@/constants/calendarViews.ts";
 import type { EventDetail } from "@/types/event.ts";
 
 export function useCalendar(revision = 0) {
   const { error, loadEvents, removeEvent } = useCalendarEvents();
+  const isMobile = useIsMobile();
   const calendarRef = useRef<FullCalendar>(null);
   const wrapRef = useRef<HTMLDivElement>(null);
   const [title, setTitle] = useState("");
@@ -50,6 +53,13 @@ export function useCalendar(revision = 0) {
       category: event.extendedProps.category ?? null,
     });
   };
+
+  const handleDateClick = (arg: DateClickArg) => {
+    if (!isMobile) return;
+    if (arg.view.type !== "dayGridMonth") return;
+    api()?.changeView("timeGridDay", arg.date);
+  };
+
   const handleDeleteEvent = async (event: EventDetail) => {
     const calendar = api();
     calendar?.getEventById(event.id)?.remove();
@@ -68,14 +78,17 @@ export function useCalendar(revision = 0) {
     title,
     currentView,
     selectedEvent,
+    showBackToMonth: isMobile && currentView === "timeGridDay",
     handleDatesSet,
     handleEventClick,
     setSelectedEvent,
+    handleDateClick,
     closeEventDetail: () => setSelectedEvent(null),
     onDeleteEvent: handleDeleteEvent,
     onPrev: () => api()?.prev(),
     onNext: () => api()?.next(),
     onToday: () => api()?.today(),
     onChangeView: (view: CalendarView) => api()?.changeView(view),
+    onBackToMonth: () => api()?.changeView("dayGridMonth"),
   };
 }

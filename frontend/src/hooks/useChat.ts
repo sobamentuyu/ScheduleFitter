@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { useIsMobile } from "@/hooks/useIsMobile.ts";
 import {
   approveScheduleSuggestion,
   createScheduleSuggestion,
@@ -43,7 +44,8 @@ type UseChatOptions = {
 };
 
 export function useChat({ onEventCreated }: UseChatOptions = {}) {
-  const [isChatOpen, setIsChatOpen] = useState(true);
+  const isMobile = useIsMobile();
+  const [isChatOpen, setIsChatOpen] = useState(() => !isMobile);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [message, setMessage] = useState("");
   const [pendingImage, setPendingImage] = useState<PendingImage | null>(null);
