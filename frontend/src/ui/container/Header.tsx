@@ -30,16 +30,16 @@ export function Header() {
       {current?.showBack ? (
         <div className="flex items-center gap-2">
           <Link to={current.backTo} aria-label="戻る">
-            <CaretLeftIcon size={24} weight="regular" />
+            <CaretLeftIcon size={30} weight="regular" />
           </Link>
-          <Text as="h1" size="xl" color="primaryContent">
+          <Text as="h1" size="xl" className="!text-2xl" color="primaryContent">
             {current.title}
           </Text>
         </div>
       ) : (
         <div className="flex items-center gap-1">
           <img src={logoImg} alt="logo" className="h-8 w-8 object-contain" />
-          <Text as="h1" size="xl" color="primaryContent">
+          <Text as="h1" size="xl" className="!text-2xl" color="primaryContent">
             ScheduleFitter
           </Text>
         </div>
@@ -47,11 +47,11 @@ export function Header() {
       <div className="flex items-center gap-3">
         {!current && (
           <Link to="/setting" aria-label="設定">
-            <GearIcon size={24} weight="regular" />
+            <GearIcon size={30} weight="regular" />
           </Link>
         )}
         <button type="button" aria-label="ログアウト" onClick={logout}>
-          <SignOutIcon size={24} weight="regular" />
+          <SignOutIcon size={30} weight="regular" />
         </button>
       </div>
     </header>
