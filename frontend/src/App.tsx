@@ -1,6 +1,6 @@
 import { BrowserRouter, Route, Routes } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth.ts";
-import { Header } from "@/ui/container/Header.tsx";
+import { Header } from "@/ui/container/shared/Header.tsx";
 import { Account } from "@/pages/Account.tsx";
 import { Setting } from "@/pages/Setting.tsx";
 import { Theme } from "@/pages/Theme.tsx";

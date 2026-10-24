@@ -1,11 +1,11 @@
-import type { ScheduleSuggestionEvent } from '@/types/scheduleSuggestion.ts'
+import type { ScheduleSuggestionEvent } from '@/entities/scheduleSuggestion.ts'
 import type {
 	ConflictTimeDraft,
 	KeptSide,
 	ResolutionAction,
 } from '@/utils/conflictResolution.ts'
-import { ConflictTimeEditor } from '@/ui/container/chat/ConflictTimeEditor.tsx'
-import { ScheduleCompareCard } from '@/ui/container/chat/ScheduleCompareCard.tsx'
+import { ConflictTimeEditor } from '@/ui/container/top/chat/ConflictTimeEditor.tsx'
+import { ScheduleCompareCard } from '@/ui/container/top/chat/ScheduleCompareCard.tsx'
 
 type ExistingView = {
 	title: string

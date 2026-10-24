@@ -12,7 +12,7 @@ import { useChatScroll } from "@/hooks/useChatScroll.ts";
 import { useMultilineInput } from "@/hooks/useMultilineInput.ts";
 import { useVoiceInput } from "@/hooks/useVoiceInput.ts";
 import { Text } from "@/ui/common/Text.tsx";
-import { ScheduleConfirmationCard } from "@/ui/container/chat/ScheduleConfirmationCard.tsx";
+import { ScheduleConfirmationCard } from "@/ui/container/top/chat/ScheduleConfirmationCard.tsx";
 
 type ChatpanelProps = {
   onEventCreated?: () => void;

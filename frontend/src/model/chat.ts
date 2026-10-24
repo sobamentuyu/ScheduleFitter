@@ -1,4 +1,4 @@
-import type { ScheduleSuggestion } from "@/types/scheduleSuggestion.ts";
+import type { ScheduleSuggestion } from "@/entities/scheduleSuggestion.ts";
 
 export type ChatRole = "user" | "assistant";
 

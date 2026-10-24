@@ -1,6 +1,6 @@
 import { useState } from "react";
-import { Calendar } from "@/ui/container/calendar/Calendar.tsx";
-import { Chatpanel } from "@/ui/container/Chatpanel.tsx";
+import { Calendar } from "@/ui/container/top/calendar/Calendar.tsx";
+import { Chatpanel } from "@/ui/container/top/Chatpanel.tsx";
 
 export function Top() {
   const [calendarRevision, setCalendarRevision] = useState(0);

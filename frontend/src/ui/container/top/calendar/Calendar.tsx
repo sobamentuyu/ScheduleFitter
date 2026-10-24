@@ -6,20 +6,21 @@ import interactionPlugin from "@fullcalendar/interaction";
 import jaLocale from "@fullcalendar/core/locales/ja";
 import { useCalendar } from "@/hooks/useCalendar.ts";
 import { Text } from "@/ui/common/Text.tsx";
-import { CalendarToolbar } from "@/ui/container/calendar/Toolbar.tsx";
-import { EventDetailPopup } from "@/ui/container/calendar/EventDetailPopup.tsx";
+import { CalendarToolbar } from "@/ui/container/top/calendar/Toolbar.tsx";
+import { EventDetailPopup } from "@/ui/container/top/calendar/EventDetailPopup.tsx";
 import {
   dayCellClassNames,
   renderDayCell,
   renderDayHeader,
   renderEvent,
   renderSlotLabel,
-} from "@/ui/container/calendar/CalendarRenderers.tsx";
+} from "@/ui/container/top/calendar/CalendarRenderers.tsx";
 import { editEvent } from "@/api/events.ts";
+import type { EventDetail } from "@/model/event.ts";
+
 type CalendarProps = {
   revision?: number;
 };
-import type { EventDetail } from "@/types/event";
 
 export function Calendar({ revision = 0 }: CalendarProps) {
   const {

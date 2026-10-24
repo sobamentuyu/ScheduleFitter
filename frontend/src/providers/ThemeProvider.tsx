@@ -1,7 +1,11 @@
-import type { ThemeName } from "@/constants/theme.ts";
-import { defaultTheme, isThemeName, THEME_STORAGE_KEY } from "@/constants/theme.ts";
+import type { ThemeName } from "@/model/theme.ts";
+import {
+  defaultTheme,
+  isThemeName,
+  THEME_STORAGE_KEY,
+} from "@/model/theme.ts";
 import { useEffect, useState, type ReactNode } from "react";
-import { ThemeContext } from "@/contexts/theme.ts";
+import { ThemeContext } from "@/providers/theme.ts";
 
 function readStoredTheme(): ThemeName {
   try {

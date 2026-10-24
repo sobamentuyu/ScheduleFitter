@@ -1,4 +1,4 @@
-import { ThemeSelector } from "@/ui/theme/ThemeSelector.tsx";
+import { ThemeSelector } from "@/ui/container/setting/ThemeSelector.tsx";
 
 export function Theme() {
   return (

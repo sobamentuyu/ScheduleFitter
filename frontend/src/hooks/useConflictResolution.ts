@@ -3,7 +3,7 @@ import { fetchEventConflicts } from '@/api/events.ts'
 import type {
 	ConflictingEvent,
 	ScheduleSuggestionEvent,
-} from '@/types/scheduleSuggestion.ts'
+} from '@/entities/scheduleSuggestion.ts'
 import {
 	applyConflictResolution,
 	buildConflictQueue,

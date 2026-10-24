@@ -1,35 +1,10 @@
-import type { ConflictingEvent } from "@/types/scheduleSuggestion.ts";
+import { request } from "@/api/client.ts";
+import type { ConflictingEvent } from "@/entities/scheduleSuggestion.ts";
 import type {
   CalendarEvent,
   CreateEventPayload,
   EditEventPayload,
-} from "@/types/event";
-
-const API_BASE = import.meta.env.VITE_API_BASE_URL ?? "http://localhost:8080";
-
-async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
-  const res = await fetch(`${API_BASE}${path}`, {
-    ...options,
-    credentials: "include",
-    headers: {
-      "Content-Type": "application/json",
-      ...options.headers,
-    },
-  });
-
-  if (!res.ok) {
-    let message = `Request failed (${res.status})`;
-    try {
-      const body = (await res.json()) as { error?: string };
-      if (body.error) message = body.error;
-    } catch {
-      // ignore JSON parse errors
-    }
-    throw new Error(message);
-  }
-
-  return (await res.json()) as T;
-}
+} from "@/entities/event.ts";
 
 export function fetchEvents(
   from?: string,
@@ -55,7 +30,6 @@ export async function deleteEvent(id: string): Promise<void> {
   await request<{ ok: boolean }>(`/api/events/${encodeURIComponent(id)}`, {
     method: "DELETE",
   });
-  console.log("deleting id:", id);
 }
 
 export function fetchEventConflicts(payload: {
@@ -72,8 +46,9 @@ export function fetchEventConflicts(payload: {
     }),
   }).then((body) => body.conflicts);
 }
+
 export function editEvent(payload: EditEventPayload): Promise<CalendarEvent> {
-  return request(`/api/events/${encodeURIComponent(payload.id)}`, {
+  return request(`/api/events/${encodeURIComponent(String(payload.id))}`, {
     method: "PUT",
     body: JSON.stringify(payload),
   });

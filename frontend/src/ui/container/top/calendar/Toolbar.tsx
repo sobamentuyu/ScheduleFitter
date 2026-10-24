@@ -4,7 +4,7 @@ import {
   CaretRightIcon,
 } from '@phosphor-icons/react'
 import { Text } from '@/ui/common/Text.tsx'
-import { VIEWS, type CalendarView } from '@/constants/calendarViews.ts'
+import { VIEWS, type CalendarView } from '@/model/calendar.ts'
 
 function ViewSwitcher({
   currentView,

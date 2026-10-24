@@ -1,4 +1,4 @@
-import type { ThemeName } from "@/constants/theme.ts";
+import type { ThemeName } from "@/model/theme.ts";
 import { Text } from "@/ui/common/Text.tsx";
 type Props = {
   color: string;

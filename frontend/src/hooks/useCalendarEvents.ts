@@ -1,8 +1,8 @@
 import { useState } from "react";
 import type { EventInput } from "@fullcalendar/core";
 import { fetchEvents, deleteEvent, editEvent } from "@/api/events.ts";
-import type { EditEventPayload } from "@/types/event.ts";
-import type { CalendarEvent } from "@/types/event.ts";
+import type { EditEventPayload } from "@/entities/event.ts";
+import type { CalendarEvent } from "@/entities/event.ts";
 
 type FetchInfo = { startStr: string; endStr: string };
 

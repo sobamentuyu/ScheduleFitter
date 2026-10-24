@@ -1,11 +1,11 @@
-import type { ConfirmationState } from '@/types/chat.ts'
+import type { ConfirmationState } from '@/model/chat.ts'
 import type {
 	ExistingEventUpdate,
 	ScheduleSuggestionEvent,
-} from '@/types/scheduleSuggestion.ts'
+} from '@/entities/scheduleSuggestion.ts'
 import { useConflictResolution } from '@/hooks/useConflictResolution.ts'
 import { useScheduleConfirmation } from '@/hooks/useScheduleConfirmation.ts'
-import { ConflictResolutionPanel } from '@/ui/container/chat/ConflictResolutionPanel.tsx'
+import { ConflictResolutionPanel } from '@/ui/container/top/chat/ConflictResolutionPanel.tsx'
 import {
 	formatMissingNotices,
 	formatScheduleDateTime,

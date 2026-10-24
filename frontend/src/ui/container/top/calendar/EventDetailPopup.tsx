@@ -10,9 +10,9 @@ import {
 import { formatEventDateTime } from "@/utils/formatEventDateTime.ts";
 import { useEventDetailPopup } from "@/hooks/useEventDetailPopup.ts";
 import { Text } from "@/ui/common/Text.tsx";
-import type { EventDetail } from "@/types/event.ts";
-import { EditableInput } from "@/ui/container/edit.tsx";
-import { Trash } from "@/ui/container/trash";
+import type { EventDetail } from "@/model/event.ts";
+import { EditableInput } from "@/ui/container/top/edit.tsx";
+import { Trash } from "@/ui/container/top/trash.tsx";
 const toLocalInput = (d?: Date | null) =>
   d
     ? new Date(d.getTime() - d.getTimezoneOffset() * 60_000)

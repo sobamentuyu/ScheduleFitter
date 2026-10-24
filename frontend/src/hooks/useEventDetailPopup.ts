@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react'
-import type { EventDetail } from '@/types/event.ts'
+import type { EventDetail } from '@/model/event.ts'
 
 export function useEventDetailPopup(event: EventDetail | null) {
   const dialogRef = useRef<HTMLDialogElement>(null)
