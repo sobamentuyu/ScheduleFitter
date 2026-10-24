@@ -1,6 +1,10 @@
-import { CaretLeftIcon, CaretRightIcon } from "@phosphor-icons/react";
-import { Text } from "@/ui/common/Text.tsx";
-import { VIEWS, type CalendarView } from "@/constants/calendarViews.ts";
+import {
+  ArrowLeftIcon,
+  CaretLeftIcon,
+  CaretRightIcon,
+} from '@phosphor-icons/react'
+import { Text } from '@/ui/common/Text.tsx'
+import { VIEWS, type CalendarView } from '@/constants/calendarViews.ts'
 
 function ViewSwitcher({
   currentView,
@@ -39,21 +43,38 @@ function ViewSwitcher({
 export function CalendarToolbar({
   title,
   currentView,
+  showBackToMonth = false,
   onPrev,
   onNext,
   onToday,
   onChangeView,
+  onBackToMonth,
 }: {
-  title: string;
-  currentView: CalendarView;
-  onPrev: () => void;
-  onNext: () => void;
-  onToday: () => void;
-  onChangeView: (view: CalendarView) => void;
+  title: string
+  currentView: CalendarView
+  showBackToMonth?: boolean
+  onPrev: () => void
+  onNext: () => void
+  onToday: () => void
+  onChangeView: (view: CalendarView) => void
+  onBackToMonth?: () => void
 }) {
   return (
     <div className="mb-3 grid grid-cols-[1fr_auto] items-center gap-y-2 sm:grid-cols-[1fr_auto_1fr]">
       <div className="flex items-center gap-1">
+        {showBackToMonth && onBackToMonth && (
+          <button
+            type="button"
+            className="btn btn-ghost btn-sm gap-1 rounded-full px-2 shadow-none"
+            aria-label="月表示に戻る"
+            onClick={onBackToMonth}
+          >
+            <ArrowLeftIcon size={18} weight="regular" />
+            <Text as="span" size="sm">
+              月
+            </Text>
+          </button>
+        )}
         <button
           type="button"
           className="flex size-9 items-center justify-center rounded-full hover:bg-primary"

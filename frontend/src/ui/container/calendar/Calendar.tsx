@@ -1,6 +1,8 @@
+import { useRef } from "react";
 import FullCalendar from "@fullcalendar/react";
 import dayGridPlugin from "@fullcalendar/daygrid";
 import timeGridPlugin from "@fullcalendar/timegrid";
+import interactionPlugin from "@fullcalendar/interaction";
 import jaLocale from "@fullcalendar/core/locales/ja";
 import { useCalendar } from "@/hooks/useCalendar.ts";
 import { Text } from "@/ui/common/Text.tsx";
@@ -17,8 +19,8 @@ import { editEvent } from "@/api/events.ts";
 type CalendarProps = {
   revision?: number;
 };
-import { useRef } from "react";
 import type { EventDetail } from "@/types/event";
+
 export function Calendar({ revision = 0 }: CalendarProps) {
   const {
     error,
@@ -28,14 +30,17 @@ export function Calendar({ revision = 0 }: CalendarProps) {
     title,
     currentView,
     selectedEvent,
+    showBackToMonth,
     handleDatesSet,
     handleEventClick,
+    handleDateClick,
     closeEventDetail,
     setSelectedEvent,
     onPrev,
     onNext,
     onToday,
     onChangeView,
+    onBackToMonth,
     onDeleteEvent,
   } = useCalendar(revision);
   const touchStart = useRef<{ x: number; y: number } | null>(null);
@@ -100,10 +105,12 @@ export function Calendar({ revision = 0 }: CalendarProps) {
       <CalendarToolbar
         title={title}
         currentView={currentView}
+        showBackToMonth={showBackToMonth}
         onPrev={onPrev}
         onNext={onNext}
         onToday={onToday}
         onChangeView={onChangeView}
+        onBackToMonth={onBackToMonth}
       />
 
       <div
@@ -114,7 +121,7 @@ export function Calendar({ revision = 0 }: CalendarProps) {
       >
         <FullCalendar
           ref={calendarRef}
-          plugins={[dayGridPlugin, timeGridPlugin]}
+          plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}
           initialView="dayGridMonth"
           headerToolbar={false}
           locale={jaLocale}
@@ -135,6 +142,7 @@ export function Calendar({ revision = 0 }: CalendarProps) {
           events={loadEvents}
           datesSet={handleDatesSet}
           eventClick={handleEventClick}
+          dateClick={handleDateClick}
           dayHeaderClassNames="bg-primary py-2"
           dayCellClassNames={dayCellClassNames}
           eventClassNames="cursor-pointer font-medium"
@@ -143,7 +151,7 @@ export function Calendar({ revision = 0 }: CalendarProps) {
           dayHeaderContent={renderDayHeader}
           eventContent={renderEvent}
           slotLabelContent={renderSlotLabel}
-          editable={true}
+          editable={false}
         />
       </div>
 
