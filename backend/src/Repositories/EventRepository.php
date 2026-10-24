@@ -139,7 +139,7 @@ final class EventRepository
             'location' => array_key_exists('location', $data) ? $data['location'] : $existing['location'],
             'category' => array_key_exists('category', $data) ? $data['category'] : $existing['category'],
             'start_at' => $data['start_at'] ?? $existing['start_at'],
-            'end_at' => $data['end_at'] ?? $existing['end_at'],
+            'end_at' => array_key_exists('end_at', $data) ? $data['end_at'] : $existing['end_at'], // ← ここだけ変更
             'all_day' => array_key_exists('all_day', $data)
                 ? (($data['all_day']) ? 't' : 'f')
                 : ($existing['all_day'] ? 't' : 'f'),

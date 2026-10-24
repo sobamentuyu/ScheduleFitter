@@ -51,11 +51,15 @@ export function useCalendar(revision = 0) {
     });
   };
   const handleDeleteEvent = async (event: EventDetail) => {
-    await removeEvent(event.id);
+    const calendar = api();
+    calendar?.getEventById(event.id)?.remove();
     setSelectedEvent(null);
-    calendarRef.current?.getApi().refetchEvents();
+    try {
+      await removeEvent(event.id);
+    } catch {
+      calendar?.refetchEvents();
+    }
   };
-
   return {
     error,
     loadEvents,
@@ -66,6 +70,7 @@ export function useCalendar(revision = 0) {
     selectedEvent,
     handleDatesSet,
     handleEventClick,
+    setSelectedEvent,
     closeEventDetail: () => setSelectedEvent(null),
     onDeleteEvent: handleDeleteEvent,
     onPrev: () => api()?.prev(),
