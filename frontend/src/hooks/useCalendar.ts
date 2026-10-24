@@ -4,8 +4,8 @@ import type { DateClickArg } from "@fullcalendar/interaction";
 import type { DatesSetArg, EventClickArg } from "@fullcalendar/core";
 import { useCalendarEvents } from "@/hooks/useCalendarEvents.ts";
 import { useIsMobile } from "@/hooks/useIsMobile.ts";
-import { VIEWS, type CalendarView } from "@/constants/calendarViews.ts";
-import type { EventDetail } from "@/types/event.ts";
+import { VIEWS, type CalendarView } from "@/model/calendar.ts";
+import type { EventDetail } from "@/model/event.ts";
 
 export function useCalendar(revision = 0) {
   const { error, loadEvents, removeEvent } = useCalendarEvents();

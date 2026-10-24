@@ -25,18 +25,8 @@ export type CreateEventPayload = {
   all_day: boolean;
 };
 
-export type EventDetail = {
-  id: string;
-  title: string;
-  start: Date | null;
-  end: Date | null;
-  allDay: boolean;
-  description: string | null;
-  location: string | null;
-  category: string | null;
-};
 export type EditEventPayload = {
-  id: any;
+  id: number | string;
   title: string;
   description: string | null;
   location: string | null;

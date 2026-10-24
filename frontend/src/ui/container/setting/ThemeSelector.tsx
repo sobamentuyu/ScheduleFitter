@@ -1,7 +1,7 @@
-import type { ThemeName } from "@/constants/theme.ts";
-import { ThemeSelectButton } from "@/ui/theme/ThemeSelectButton.tsx";
+import type { ThemeName } from "@/model/theme.ts";
+import { ThemeSelectButton } from "@/ui/container/setting/ThemeSelectButton.tsx";
 import { useTheme } from "@/hooks/useTheme.ts";
-import { themeNames } from "@/constants/theme.ts";
+import { themeNames } from "@/model/theme.ts";
 
 const labels: Record<ThemeName, string> = {
   blue: "Blue",

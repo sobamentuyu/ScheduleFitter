@@ -2,7 +2,7 @@ import type {
 	ConflictingEvent,
 	ExistingEventUpdate,
 	ScheduleSuggestionEvent,
-} from '@/types/scheduleSuggestion.ts'
+} from '@/entities/scheduleSuggestion.ts'
 import { timeRangesConflict } from '@/utils/timeRangeConflict.ts'
 
 /** 通常の予定追加と同じ半開区間で、サーバ結果から真の衝突だけ残す */

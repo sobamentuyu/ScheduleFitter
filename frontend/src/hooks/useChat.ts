@@ -4,19 +4,19 @@ import {
   approveScheduleSuggestion,
   createScheduleSuggestion,
   createScheduleSuggestionFromImage,
-  validateScheduleImage,
 } from "@/api/scheduleSuggestions.ts";
+import { validateScheduleImage } from "@/utils/scheduleImage.ts";
 import type {
   ChatMessage,
   ChatRole,
   ScheduleConfirmationMessage,
   TextChatMessage,
-} from "@/types/chat.ts";
+} from "@/model/chat.ts";
 import type {
   ExistingEventUpdate,
   ScheduleSuggestion,
   ScheduleSuggestionEvent,
-} from "@/types/scheduleSuggestion.ts";
+} from "@/entities/scheduleSuggestion.ts";
 import { formatScheduleSuggestionHeader } from "@/utils/formatScheduleSuggestion.ts";
 
 export type PendingImage = {

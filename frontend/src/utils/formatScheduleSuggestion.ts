@@ -1,7 +1,7 @@
 import type {
   ScheduleSuggestion,
   ScheduleSuggestionEvent,
-} from '@/types/scheduleSuggestion.ts'
+} from '@/entities/scheduleSuggestion.ts'
 
 const FIELD_LABELS: Record<string, string> = {
   date: '日付',

@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
-import type { ConfirmationState } from "@/types/chat.ts";
-import type { ScheduleSuggestionEvent } from "@/types/scheduleSuggestion.ts";
+import type { ConfirmationState } from "@/model/chat.ts";
+import type { ScheduleSuggestionEvent } from "@/entities/scheduleSuggestion.ts";
 
 function readyIndexes(events: ScheduleSuggestionEvent[]): number[] {
   return events.flatMap((event, i) => (event.status === "ready" ? [i] : []));
