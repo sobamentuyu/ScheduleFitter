@@ -1,6 +1,7 @@
 import { useState } from "react";
 import type { EventInput } from "@fullcalendar/core";
-import { fetchEvents, deleteEvent } from "@/api/events.ts";
+import { fetchEvents, deleteEvent, editEvent } from "@/api/events.ts";
+import type { EditEventPayload } from "@/types/event.ts";
 import type { CalendarEvent } from "@/types/event.ts";
 
 type FetchInfo = { startStr: string; endStr: string };
@@ -52,5 +53,17 @@ export function useCalendarEvents() {
     }
   };
 
-  return { error, loadEvents, removeEvent };
+  const reviseEvent = async (payload: EditEventPayload) => {
+    try {
+      await editEvent(payload);
+      setError(null);
+    } catch (e) {
+      const message =
+        e instanceof Error ? e.message : "予定の編集に失敗しました";
+      setError(message);
+      throw e;
+    }
+  };
+
+  return { error, loadEvents, removeEvent, reviseEvent };
 }

@@ -36,6 +36,7 @@ export type EventDetail = {
   category: string | null;
 };
 export type EditEventPayload = {
+  id: any;
   title: string;
   description: string | null;
   location: string | null;

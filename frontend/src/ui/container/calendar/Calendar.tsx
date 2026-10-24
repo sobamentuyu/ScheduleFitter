@@ -13,11 +13,12 @@ import {
   renderEvent,
   renderSlotLabel,
 } from "@/ui/container/calendar/CalendarRenderers.tsx";
-
+import { editEvent } from "@/api/events.ts";
 type CalendarProps = {
   revision?: number;
 };
 import { useRef } from "react";
+import type { EventDetail } from "@/types/event";
 export function Calendar({ revision = 0 }: CalendarProps) {
   const {
     error,
@@ -30,6 +31,7 @@ export function Calendar({ revision = 0 }: CalendarProps) {
     handleDatesSet,
     handleEventClick,
     closeEventDetail,
+    setSelectedEvent,
     onPrev,
     onNext,
     onToday,
@@ -49,6 +51,40 @@ export function Calendar({ revision = 0 }: CalendarProps) {
     if (Math.abs(dx) < 50 || Math.abs(dx) < Math.abs(dy)) return;
     if (dx > 0) onPrev();
     else onNext();
+  };
+  const toDateStr = (d: Date) =>
+    `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+  const handleSave = async (updated: EventDetail) => {
+    if (!updated.start || !updated.end) {
+      throw new Error("イベントの開始日時と終了日時が必要です。");
+    }
+    const calendar = calendarRef.current?.getApi();
+    const fcEvent = calendar?.getEventById(String(updated.id));
+    if (fcEvent) {
+      // 先にカレンダーの表示を書き換える
+      fcEvent.setProp("title", updated.title);
+      fcEvent.setDates(updated.start, updated.end, { allDay: updated.allDay });
+      fcEvent.setExtendedProp("description", updated.description);
+      fcEvent.setExtendedProp("location", updated.location);
+      fcEvent.setExtendedProp("category", updated.category);
+    }
+    try {
+      await editEvent({
+        ...updated,
+        start_at: updated.allDay
+          ? toDateStr(updated.start)
+          : updated.start.toISOString(),
+        end_at: updated.allDay
+          ? toDateStr(updated.end)
+          : updated.end.toISOString(),
+        all_day: updated.allDay,
+      });
+      setSelectedEvent(updated);
+    } catch (e) {
+      console.error("save failed:", e);
+      calendar?.refetchEvents();
+      throw e;
+    }
   };
 
   return (
@@ -115,6 +151,7 @@ export function Calendar({ revision = 0 }: CalendarProps) {
         event={selectedEvent}
         onClose={closeEventDetail}
         onDelete={onDeleteEvent}
+        onSave={handleSave}
       />
     </div>
   );
