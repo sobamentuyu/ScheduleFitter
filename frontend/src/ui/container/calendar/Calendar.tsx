@@ -1,4 +1,4 @@
-import { useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import FullCalendar from "@fullcalendar/react";
 import dayGridPlugin from "@fullcalendar/daygrid";
 import timeGridPlugin from "@fullcalendar/timegrid";
@@ -18,10 +18,11 @@ import {
 import { editEvent } from "@/api/events.ts";
 type CalendarProps = {
   revision?: number;
+  compactMonth?: boolean;
 };
 import type { EventDetail } from "@/types/event";
 
-export function Calendar({ revision = 0 }: CalendarProps) {
+export function Calendar({ revision = 0, compactMonth = false }: CalendarProps) {
   const {
     error,
     loadEvents,
@@ -43,6 +44,37 @@ export function Calendar({ revision = 0 }: CalendarProps) {
     onBackToMonth,
     onDeleteEvent,
   } = useCalendar(revision);
+  const [compactEventRows, setCompactEventRows] = useState(1);
+
+  useEffect(() => {
+    if (!compactMonth || currentView !== "dayGridMonth") return;
+    const monthBody = wrapRef.current?.querySelector<HTMLElement>(".fc-daygrid-body");
+    const scroller = monthBody?.closest<HTMLElement>(".fc-scroller");
+    const weeks = monthBody?.querySelector<HTMLTableElement>("table")?.tBodies[0]?.rows.length;
+    const dateHeader = monthBody?.querySelector<HTMLElement>(".fc-daygrid-day-top");
+    if (!monthBody || !scroller || !weeks || !dateHeader) return;
+
+    monthBody.style.setProperty("--compact-month-weeks", String(weeks));
+    const updateRowLimit = () => {
+      const eventHeight = Number.parseFloat(
+        getComputedStyle(monthBody).getPropertyValue("--compact-month-event-height"),
+      );
+      if (!eventHeight) return;
+
+      // The calendar needs one line for the overflow link when more events exist.
+      const weekHeight = Math.floor(scroller.clientHeight / weeks);
+      const availableHeight = weekHeight - dateHeader.offsetHeight - 2;
+      setCompactEventRows(Math.max(1, Math.min(4, Math.floor(availableHeight / eventHeight))));
+    };
+
+    const observer = new ResizeObserver(updateRowLimit);
+    observer.observe(scroller);
+    observer.observe(dateHeader);
+    return () => {
+      observer.disconnect();
+      monthBody.style.removeProperty("--compact-month-weeks");
+    };
+  }, [compactMonth, currentView, title, wrapRef]);
   const touchStart = useRef<{ x: number; y: number } | null>(null);
   const onTouchStart = (e: React.TouchEvent) => {
     if (e.touches.length !== 1) return;
@@ -93,7 +125,7 @@ export function Calendar({ revision = 0 }: CalendarProps) {
   };
 
   return (
-    <div className="sf-calendar flex h-full min-h-0 min-w-0 w-full flex-1 flex-col bg-base-100 p-3 pr-2 md:p-4 md:pr-3">
+    <div data-compact-month={compactMonth || undefined} className="sf-calendar flex h-full min-h-0 min-w-0 w-full flex-1 flex-col bg-base-100 p-3 pr-2 md:p-4 md:pr-3">
       {error && (
         <div role="alert" className="alert alert-error mb-3 shrink-0">
           <Text as="span" size="sm">
@@ -136,6 +168,13 @@ export function Calendar({ revision = 0 }: CalendarProps) {
           }}
           eventDisplay="block"
           views={{
+            dayGridMonth: compactMonth
+              ? {
+                  dayMaxEvents: compactEventRows === 4 ? 3 : false,
+                  dayMaxEventRows: compactEventRows < 4 ? compactEventRows : false,
+                  moreLinkContent: () => "…",
+                }
+              : {},
             timeGridWeek: { displayEventTime: false },
             timeGridDay: { displayEventTime: false },
           }}
