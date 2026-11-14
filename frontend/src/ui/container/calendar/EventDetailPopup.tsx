@@ -216,11 +216,24 @@ export function EventDetailPopup({
                   終日
                 </label>
               )}
-              {!editing && draft.allDay && (
+              {!editing && (
                 <span>
-                  {formatEventDateTime(event.start, event.end, event.allDay)}
+                  {formatEventDateTime(
+                    isDateValid ? start : event.start,
+                    draft.allDay
+                      ? draft.endDate &&
+                        draft.endDate.slice(0, 10) !==
+                          draft.startDate.slice(0, 10)
+                        ? addDays(new Date(draft.endDate || draft.startDate), 1)
+                        : null
+                      : draft.endDate
+                        ? new Date(draft.endDate)
+                        : null,
+                    draft.allDay,
+                  )}
                 </span>
               )}
+
               {editing && (
                 <div className="w-full flex flex-row ">
                   <input

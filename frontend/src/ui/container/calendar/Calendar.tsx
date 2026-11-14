@@ -84,7 +84,9 @@ export function Calendar({ revision = 0 }: CalendarProps) {
           : updated.end.toISOString(),
         all_day: updated.allDay,
       });
-      setSelectedEvent(updated);
+      setSelectedEvent((prev) =>
+        prev && prev.id === updated.id ? updated : prev,
+      );
     } catch (e) {
       console.error("save failed:", e);
       calendar?.refetchEvents();
@@ -156,6 +158,7 @@ export function Calendar({ revision = 0 }: CalendarProps) {
       </div>
 
       <EventDetailPopup
+        key={selectedEvent?.id}
         event={selectedEvent}
         onClose={closeEventDetail}
         onDelete={onDeleteEvent}
