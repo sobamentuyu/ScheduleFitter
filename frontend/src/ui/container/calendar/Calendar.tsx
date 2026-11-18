@@ -76,6 +76,15 @@ export function Calendar({ revision = 0, compactMonth = false }: CalendarProps) 
     };
   }, [compactMonth, currentView, title, wrapRef]);
   const touchStart = useRef<{ x: number; y: number } | null>(null);
+  const stopOverflowActivation = (e: React.MouseEvent | React.KeyboardEvent) => {
+    // Stop activation before FullCalendar's more-link handler opens its popover.
+    if (!compactMonth || currentView !== "dayGridMonth") return;
+    if (!(e.target instanceof Element) || !e.target.closest(".fc-daygrid-more-link")) return;
+    if ("key" in e && e.key !== "Enter" && e.key !== " ") return;
+    e.preventDefault();
+    e.stopPropagation();
+  };
+
   const onTouchStart = (e: React.TouchEvent) => {
     if (e.touches.length !== 1) return;
     touchStart.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
@@ -146,6 +155,8 @@ export function Calendar({ revision = 0, compactMonth = false }: CalendarProps) 
       />
 
       <div
+        onClickCapture={stopOverflowActivation}
+        onKeyDownCapture={stopOverflowActivation}
         onTouchStart={onTouchStart}
         onTouchEnd={onTouchEnd}
         ref={wrapRef}
@@ -173,6 +184,12 @@ export function Calendar({ revision = 0, compactMonth = false }: CalendarProps) 
                   dayMaxEvents: compactEventRows === 4 ? 3 : false,
                   dayMaxEventRows: compactEventRows < 4 ? compactEventRows : false,
                   moreLinkContent: () => "…",
+                  moreLinkHint: (count: number) => `ほか${count}件の予定`,
+                  moreLinkDidMount: ({ el }: { el: HTMLElement }) => {
+                    el.removeAttribute("tabindex");
+                    el.removeAttribute("aria-expanded");
+                    el.removeAttribute("aria-controls");
+                  },
                 }
               : {},
             timeGridWeek: { displayEventTime: false },
