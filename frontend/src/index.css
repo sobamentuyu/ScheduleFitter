@@ -157,6 +157,44 @@
   overflow: hidden;
 }
 
+.sf-calendar[data-compact-month] .fc-dayGridMonth-view .fc-daygrid-body {
+  --compact-month-event-height: 16px;
+}
+
+.sf-calendar[data-compact-month] .fc-dayGridMonth-view .fc-daygrid-body tbody > tr {
+  height: calc(100% / var(--compact-month-weeks, 6));
+}
+
+.sf-calendar[data-compact-month] .fc-dayGridMonth-view .fc-daygrid-day-number {
+  padding: 0;
+}
+
+.sf-calendar[data-compact-month] .fc-dayGridMonth-view .fc-daygrid-day-number > span {
+  width: 1.5rem;
+  height: 1.5rem;
+}
+
+.sf-calendar[data-compact-month] .fc-dayGridMonth-view .fc-daygrid-body-unbalanced .fc-daygrid-day-events {
+  margin-top: 0;
+  min-height: 0;
+}
+
+.sf-calendar[data-compact-month] .fc-dayGridMonth-view .fc-daygrid-day-events .fc-daygrid-event,
+.sf-calendar[data-compact-month] .fc-dayGridMonth-view .fc-daygrid-more-link {
+  height: var(--compact-month-event-height);
+  margin-block: 0;
+  padding-block: 0;
+}
+
+.sf-calendar[data-compact-month] .fc-dayGridMonth-view .fc-daygrid-more-link {
+  line-height: var(--compact-month-event-height);
+  cursor: default;
+}
+
+.sf-calendar[data-compact-month] .fc-dayGridMonth-view .fc-daygrid-more-link:hover {
+  background: transparent;
+}
+
 .sf-calendar .fc-timegrid .fc-daygrid-day-top,
 .sf-calendar .fc-timegrid .fc-daygrid-day-number,
 .sf-calendar .fc-timegrid .fc-event-time {
