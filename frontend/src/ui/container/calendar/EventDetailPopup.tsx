@@ -1,5 +1,4 @@
 import type { ReactNode } from "react";
-import { useEffect, useState } from "react";
 import {
   ClockIcon,
   MapPinIcon,
@@ -8,22 +7,12 @@ import {
   TagIcon,
 } from "@phosphor-icons/react";
 import { formatEventDateTime } from "@/utils/formatEventDateTime.ts";
+import { useEventDetailForm } from "@/hooks/useEventDetailForm.ts";
 import { useEventDetailPopup } from "@/hooks/useEventDetailPopup.ts";
 import { Text } from "@/ui/common/Text.tsx";
 import type { EventDetail } from "@/types/event.ts";
 import { EditableInput } from "@/ui/container/edit.tsx";
 import { Trash } from "@/ui/container/trash";
-const toLocalInput = (d?: Date | null) =>
-  d
-    ? new Date(d.getTime() - d.getTimezoneOffset() * 60_000)
-        .toISOString()
-        .slice(0, 16)
-    : "";
-const addDays = (d: Date, n: number) => {
-  const x = new Date(d);
-  x.setDate(x.getDate() + n);
-  return x;
-};
 const FIELDS = [
   {
     key: "location",
@@ -57,100 +46,21 @@ export function EventDetailPopup({
   onDelete: (event: EventDetail) => void | Promise<void>;
 }) {
   const { dialogRef, closeDialog } = useEventDetailPopup(event);
-  const [draft, setDraft] = useState({
-    title: "",
-    location: "",
-    category: "",
-    description: "",
-    startDate: "",
-    endDate: event
-      ? toLocalInput(
-          event.allDay && event.end ? addDays(event.end, -1) : event.end,
-        )
-      : "",
-    allDay: false,
-  });
-  const [error, setError] = useState("");
-  const [editing, setEditing] = useState(false);
-
-  const update = (patch: Partial<typeof draft>) =>
-    setDraft((prev) => ({ ...prev, ...patch }));
-
-  useEffect(() => {
-    if (!event) return;
-    console.log(
-      "allDay:",
-      event.allDay,
-      "end:",
-      event.end,
-      "start:",
-      event.start,
-    );
-    setDraft({
-      title: event.title.trim() || "",
-      location: event.location || "",
-      category: event.category || "",
-      description: event.description || "",
-      startDate: toLocalInput(event.start),
-      endDate: toLocalInput(
-        event.allDay && event.end ? addDays(event.end, -1) : event.end,
-      ),
-      allDay: event.allDay,
-    });
-    setError("");
-    setEditing(false);
-  }, [event]);
-
-  const start = new Date(draft.startDate);
-  const end = draft.endDate ? new Date(draft.endDate) : null;
-  const isDateValid =
-    !Number.isNaN(start.getTime()) &&
-    (draft.allDay
-      ? end === null || (!Number.isNaN(end.getTime()) && start <= end)
-      : end !== null && !Number.isNaN(end.getTime()) && start < end);
-  const isTitleValid = draft.title.trim() !== "";
-  const handleSave = async () => {
-    if (!event || !isDateValid || !isTitleValid) return;
-    setError("");
-    setEditing(false);
-    try {
-      await onSave({
-        ...event,
-        title: draft.title,
-        location: draft.location,
-        category: draft.category,
-        description: draft.description,
-        start,
-        end: draft.allDay
-          ? addDays(new Date(draft.endDate || draft.startDate), 1)
-          : draft.endDate
-            ? new Date(draft.endDate)
-            : null,
-        allDay: draft.allDay,
-      });
-      setError("");
-      setEditing(false);
-    } catch {
-      setEditing(true);
-      setError("保存に失敗しました。もう一度試してください。");
-    }
-  };
-  const handleCancel = () => {
-    if (!event) return;
-    setDraft({
-      title: event.title.trim() || "",
-      location: event.location || "",
-      category: event.category || "",
-      description: event.description || "",
-      startDate: toLocalInput(event.start),
-      endDate: toLocalInput(
-        event.allDay && event.end ? addDays(event.end, -1) : event.end,
-      ),
-      allDay: event.allDay,
-    });
-    setError("");
-    setEditing(false);
-  };
+  const {
+    draft,
+    editing,
+    error,
+    isDateValid,
+    isTitleValid,
+    displayStart,
+    displayEnd,
+    startEditing,
+    update,
+    setAllDay,
+    setDateInput,
+    save,
+    cancel,
+  } = useEventDetailForm(event, onSave);
 
   return (
     <dialog
@@ -161,7 +71,7 @@ export function EventDetailPopup({
       onCancel={(e) => {
         if (editing) {
           e.preventDefault();
-          handleCancel();
+          cancel();
         }
       }}
     >
@@ -192,35 +102,21 @@ export function EventDetailPopup({
                     className="checkbox checkbox-sm"
                     checked={draft.allDay}
                     disabled={!editing}
-                    onChange={(e) => {
-                      if (e.target.checked) {
-                        update({
-                          allDay: true,
-                          endDate: draft.endDate || draft.startDate,
-                        });
-                      } else {
-                        const s = new Date(draft.startDate);
-                        update({
-                          allDay: false,
-                          endDate:
-                            draft.endDate ||
-                            (Number.isNaN(s.getTime())
-                              ? ""
-                              : toLocalInput(
-                                  new Date(s.getTime() + 60 * 60 * 1000),
-                                )),
-                        });
-                      }
-                    }}
+                    onChange={(e) => setAllDay(e.target.checked)}
                   />
                   終日
                 </label>
               )}
-              {!editing && draft.allDay && (
+              {!editing && (
                 <span>
-                  {formatEventDateTime(event.start, event.end, event.allDay)}
+                  {formatEventDateTime(
+                    displayStart,
+                    displayEnd,
+                    draft.allDay,
+                  )}
                 </span>
               )}
+
               {editing && (
                 <div className="w-full flex flex-row ">
                   <input
@@ -231,13 +127,7 @@ export function EventDetailPopup({
                         : draft.startDate
                     }
                     disabled={!editing}
-                    onChange={(e) =>
-                      update({
-                        startDate: draft.allDay
-                          ? `${e.target.value}T00:00`
-                          : e.target.value,
-                      })
-                    }
+                    onChange={(e) => setDateInput("startDate", e.target.value)}
                     className="rounded-lg input input-bordered w-full focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)] focus:border-[var(--color-chat)]"
                   />
                   <span className="flex items-center px-3 border-transparent text-sm">
@@ -249,13 +139,7 @@ export function EventDetailPopup({
                       draft.allDay ? draft.endDate.slice(0, 10) : draft.endDate
                     }
                     disabled={!editing}
-                    onChange={(e) =>
-                      update({
-                        endDate: draft.allDay
-                          ? `${e.target.value}T00:00`
-                          : e.target.value,
-                      })
-                    }
+                    onChange={(e) => setDateInput("endDate", e.target.value)}
                     className="rounded-lg input input-bordered w-full focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)] focus:border-[var(--color-chat)]"
                   />
                 </div>
@@ -290,7 +174,7 @@ export function EventDetailPopup({
               <button
                 type="button"
                 className={`btn bg-[var(--color-chat)] shadow-sm ${editing ? "btn-active" : ""}`}
-                onClick={() => setEditing((v) => !v)}
+                onClick={startEditing}
               >
                 <PencilSimpleIcon
                   size={24}
@@ -315,14 +199,14 @@ export function EventDetailPopup({
               <button
                 type="button"
                 className="btn h-10 w-30"
-                onClick={handleCancel}
+                onClick={cancel}
               >
                 キャンセル
               </button>
               <button
                 type="button"
                 className="btn bg-[var(--color-chat)] h-10 w-30"
-                onClick={handleSave}
+                onClick={save}
                 disabled={!isTitleValid || !isDateValid}
               >
                 予定を上書き
@@ -337,7 +221,7 @@ export function EventDetailPopup({
         onSubmit={(e) => {
           if (editing) {
             e.preventDefault();
-            handleCancel();
+            cancel();
           }
         }}
       >

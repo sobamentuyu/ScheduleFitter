@@ -8,7 +8,7 @@ import { VIEWS, type CalendarView } from "@/constants/calendarViews.ts";
 import type { EventDetail } from "@/types/event.ts";
 
 export function useCalendar(revision = 0) {
-  const { error, loadEvents, removeEvent } = useCalendarEvents();
+  const { error, loadEvents, removeEvent, reviseEvent } = useCalendarEvents();
   const isMobile = useIsMobile();
   const calendarRef = useRef<FullCalendar>(null);
   const wrapRef = useRef<HTMLDivElement>(null);
@@ -70,6 +70,40 @@ export function useCalendar(revision = 0) {
       calendar?.refetchEvents();
     }
   };
+
+  const handleSaveEvent = async (updated: EventDetail) => {
+    if (!updated.start || !updated.end) {
+      throw new Error("イベントの開始日時と終了日時が必要です。");
+    }
+    const calendar = api();
+    const fcEvent = calendar?.getEventById(String(updated.id));
+    if (fcEvent) {
+      fcEvent.setProp("title", updated.title);
+      fcEvent.setDates(updated.start, updated.end, { allDay: updated.allDay });
+      fcEvent.setExtendedProp("description", updated.description);
+      fcEvent.setExtendedProp("location", updated.location);
+      fcEvent.setExtendedProp("category", updated.category);
+    }
+    try {
+      await reviseEvent({
+        id: updated.id,
+        title: updated.title,
+        description: updated.description,
+        location: updated.location,
+        category: updated.category,
+        start_at: updated.start.toISOString(),
+        end_at: updated.end.toISOString(),
+        all_day: updated.allDay,
+      });
+      setSelectedEvent((prev) =>
+        prev && prev.id === updated.id ? updated : prev,
+      );
+    } catch (e) {
+      console.error("save failed:", e);
+      calendar?.refetchEvents();
+      throw e;
+    }
+  };
   return {
     error,
     loadEvents,
@@ -81,10 +115,10 @@ export function useCalendar(revision = 0) {
     showBackToMonth: isMobile && currentView === "timeGridDay",
     handleDatesSet,
     handleEventClick,
-    setSelectedEvent,
     handleDateClick,
     closeEventDetail: () => setSelectedEvent(null),
     onDeleteEvent: handleDeleteEvent,
+    onSaveEvent: handleSaveEvent,
     onPrev: () => api()?.prev(),
     onNext: () => api()?.next(),
     onToday: () => api()?.today(),
