@@ -76,3 +76,15 @@ export function toInclusiveAllDayEndDate(endIso: string): string {
 
 	return toDateInputValue(end.toISOString())
 }
+
+/** Convert a Date to a `datetime-local` input value in local time. */
+export function toDatetimeLocalFromDate(date?: Date | null): string {
+	if (!date || Number.isNaN(date.getTime())) return ''
+	return toDatetimeLocalValue(date.toISOString())
+}
+
+export function addCalendarDays(date: Date, days: number): Date {
+	const next = new Date(date)
+	next.setDate(next.getDate() + days)
+	return next
+}
