@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useCallback, useState } from "react";
 import type { EventInput } from "@fullcalendar/core";
 import { fetchEvents, deleteEvent, editEvent } from "@/api/events.ts";
 import type { EditEventPayload } from "@/types/event.ts";
@@ -24,24 +24,27 @@ function toFullCalendarEvent(event: CalendarEvent): EventInput {
 export function useCalendarEvents() {
   const [error, setError] = useState<string | null>(null);
 
-  const loadEvents = async (
-    fetchInfo: FetchInfo,
-    successCallback: (events: EventInput[]) => void,
-    failureCallback: (error: Error) => void,
-  ) => {
-    try {
-      const events = await fetchEvents(fetchInfo.startStr, fetchInfo.endStr);
-      setError(null);
-      successCallback(events.map(toFullCalendarEvent));
-    } catch (e) {
-      const message =
-        e instanceof Error ? e.message : "予定の取得に失敗しました";
-      setError(message);
-      failureCallback(new Error(message));
-    }
-  };
+  const loadEvents = useCallback(
+    async (
+      fetchInfo: FetchInfo,
+      successCallback: (events: EventInput[]) => void,
+      failureCallback: (error: Error) => void,
+    ) => {
+      try {
+        const events = await fetchEvents(fetchInfo.startStr, fetchInfo.endStr);
+        setError(null);
+        successCallback(events.map(toFullCalendarEvent));
+      } catch (e) {
+        const message =
+          e instanceof Error ? e.message : "予定の取得に失敗しました";
+        setError(message);
+        failureCallback(new Error(message));
+      }
+    },
+    [],
+  );
 
-  const removeEvent = async (id: string) => {
+  const removeEvent = useCallback(async (id: string) => {
     try {
       await deleteEvent(id);
       setError(null);
@@ -51,9 +54,9 @@ export function useCalendarEvents() {
       setError(message);
       throw e;
     }
-  };
+  }, []);
 
-  const reviseEvent = async (payload: EditEventPayload) => {
+  const reviseEvent = useCallback(async (payload: EditEventPayload) => {
     try {
       await editEvent(payload);
       setError(null);
@@ -63,7 +66,7 @@ export function useCalendarEvents() {
       setError(message);
       throw e;
     }
-  };
+  }, []);
 
   return { error, loadEvents, removeEvent, reviseEvent };
 }

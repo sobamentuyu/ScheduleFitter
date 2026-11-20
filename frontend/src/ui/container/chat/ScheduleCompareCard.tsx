@@ -1,7 +1,12 @@
-import type { ReactNode } from 'react'
+import type { KeyboardEvent, ReactNode } from 'react'
 import { formatEventDateTime } from '@/utils/formatEventDateTime.ts'
 
 export type ScheduleCompareTone = 'new' | 'existing'
+export type ScheduleCompareEmphasis =
+	| 'default'
+	| 'selected'
+	| 'conflict'
+	| 'resolved'
 
 type ScheduleCompareCardProps = {
 	badge: string
@@ -12,6 +17,7 @@ type ScheduleCompareCardProps = {
 	allDay: boolean
 	location?: string | null
 	selected?: boolean
+	emphasis?: ScheduleCompareEmphasis
 	disabled?: boolean
 	footer?: ReactNode
 	onSelect?: () => void
@@ -22,6 +28,13 @@ const badgeTextStyles = {
 	existing: 'text-base-content/55',
 } as const
 
+const emphasisStyles: Record<ScheduleCompareEmphasis, string> = {
+	default: 'border-base-300 bg-base-100',
+	selected: 'border-success/70 bg-success/15 ring-2 ring-success/35',
+	conflict: 'border-error/70 bg-error/5',
+	resolved: 'border-success/60 bg-success/10',
+}
+
 export function ScheduleCompareCard({
 	badge,
 	tone,
@@ -31,6 +44,7 @@ export function ScheduleCompareCard({
 	allDay,
 	location,
 	selected = false,
+	emphasis,
 	disabled = false,
 	footer,
 	onSelect,
@@ -39,14 +53,29 @@ export function ScheduleCompareCard({
 	const end = endAt ? new Date(endAt) : null
 	const scheduleLabel = formatEventDateTime(start, end, allDay)
 	const displayTitle = title.trim() || 'タイトル未定'
+	const resolvedEmphasis =
+		emphasis ?? (selected ? 'selected' : 'default')
+	const selectable = Boolean(onSelect) && !disabled
+
+	const handleKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
+		if (!selectable || !onSelect) return
+		if (event.key === 'Enter' || event.key === ' ') {
+			event.preventDefault()
+			onSelect()
+		}
+	}
 
 	return (
 		<div
-			className={`flex h-full flex-col rounded-xl border p-3 ${
-				selected
-					? 'border-primary bg-primary/35 ring-2 ring-primary/40'
-					: 'border-base-300 bg-base-100'
+			className={`flex h-full flex-col rounded-xl border p-3 transition-[border-color,background-color,box-shadow] ${emphasisStyles[resolvedEmphasis]} ${
+				selectable ? 'cursor-pointer hover:brightness-[0.98]' : ''
 			}`}
+			role={onSelect ? 'button' : undefined}
+			tabIndex={selectable ? 0 : undefined}
+			aria-pressed={onSelect ? selected : undefined}
+			aria-disabled={onSelect ? disabled : undefined}
+			onClick={selectable ? onSelect : undefined}
+			onKeyDown={onSelect ? handleKeyDown : undefined}
 		>
 			<span className={`text-xs font-semibold ${badgeTextStyles[tone]}`}>
 				{badge}
@@ -57,21 +86,15 @@ export function ScheduleCompareCard({
 				<p className="mt-1 text-xs opacity-70">場所: {location.trim()}</p>
 			) : null}
 
-			{onSelect ? (
-				<button
-					type="button"
-					className={`btn btn-sm mt-3 w-full whitespace-nowrap ${
-						selected ? 'btn-primary' : 'btn-outline'
-					}`}
-					disabled={disabled}
-					aria-pressed={selected}
-					onClick={onSelect}
+			{footer ? (
+				<div
+					className="mt-3"
+					onClick={(event) => event.stopPropagation()}
+					onKeyDown={(event) => event.stopPropagation()}
 				>
-					{selected ? '優先中' : 'こちらを優先'}
-				</button>
+					{footer}
+				</div>
 			) : null}
-
-			{footer ? <div className="mt-3">{footer}</div> : null}
 		</div>
 	)
 }

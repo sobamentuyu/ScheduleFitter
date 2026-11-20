@@ -3,14 +3,15 @@ import type {
 	ExistingEventUpdate,
 	ScheduleSuggestionEvent,
 } from '@/types/scheduleSuggestion.ts'
+import { useConflictPreview } from '@/hooks/useConflictPreview.ts'
 import { useConflictResolution } from '@/hooks/useConflictResolution.ts'
 import { useScheduleConfirmation } from '@/hooks/useScheduleConfirmation.ts'
 import { ConflictResolutionPanel } from '@/ui/container/chat/ConflictResolutionPanel.tsx'
 import {
 	formatMissingNotices,
 	formatScheduleDateTime,
-	formatScheduleSuggestionHeader,
 } from '@/utils/formatScheduleSuggestion.ts'
+import { formatEventDateTime } from '@/utils/formatEventDateTime.ts'
 
 type ScheduleConfirmationCardProps = {
 	state: ConfirmationState
@@ -31,23 +32,30 @@ export function ScheduleConfirmationCard({
 	onApprove,
 	onCancel,
 }: ScheduleConfirmationCardProps) {
+	const { setPreview } = useConflictPreview()
+	const previewActive = state === 'pending' || state === 'failed'
 	const {
 		workingEvents,
 		hasUnresolvedConflicts,
 		currentNew,
 		currentExisting,
+		pairKind,
 		keptSide,
-		action,
 		draft,
+		shiftMode,
 		error,
 		progress,
+		conflictFreeEvents,
+		pairStillConflicting,
 		pendingChangesFor,
 		isChecking,
+		isCalendarLoading,
 		selectKeptSide,
-		selectAction,
+		applySuggestedShift,
+		openPicker,
 		updateDraft,
 		confirmResolution,
-	} = useConflictResolution(events)
+	} = useConflictResolution(events, previewActive ? setPreview : undefined)
 
 	const {
 		selectedEvents,
@@ -73,24 +81,73 @@ export function ScheduleConfirmationCard({
 		)
 	}
 
-	const statusHeader = formatScheduleSuggestionHeader(workingEvents)
-
 	if (hasUnresolvedConflicts && currentNew && currentExisting) {
+		const statusHeader = pairStillConflicting
+			? pairKind === 'peer'
+				? '追加する予定同士の時間が重なっています'
+				: '既存の予定と時間が重なっています'
+			: '重なっていません'
+		const isLastPair = progress.current >= progress.total
+		const confirmLabel = isChecking
+			? '確認中…'
+			: isLastPair
+				? '予定を追加へ'
+				: 'この解決で進む'
+
 		return (
 			<div>
-				<p className="mb-3 text-sm font-medium">{statusHeader}</p>
+				<p
+					className={`mb-3 text-sm font-medium ${
+						pairStillConflicting ? '' : 'text-success'
+					}`}
+				>
+					{statusHeader}
+				</p>
+
+				{conflictFreeEvents.length > 0 ? (
+					<div className="mb-4 rounded-xl border border-success/40 bg-success/10 p-3">
+						<p className="text-xs font-medium text-success">
+							これらの予定は衝突なく追加できます
+						</p>
+						<ul className="mt-2 flex flex-col gap-1.5">
+							{conflictFreeEvents.map((event, index) => {
+								const start = event.start_at
+									? new Date(event.start_at)
+									: null
+								const end = event.end_at ? new Date(event.end_at) : null
+								return (
+									<li
+										key={`ready-${event.title}-${event.start_at ?? index}`}
+										className="text-xs opacity-90"
+									>
+										<span className="font-medium">
+											{event.title.trim() || 'タイトル未定'}
+										</span>
+										<span className="mt-0.5 block opacity-80">
+											{formatEventDateTime(start, end, event.all_day)}
+										</span>
+									</li>
+								)
+							})}
+						</ul>
+					</div>
+				) : null}
+
 				<ConflictResolutionPanel
 					progress={progress}
+					pairKind={pairKind ?? 'existing'}
 					newEvent={currentNew}
 					existingEvent={currentExisting}
 					keptSide={keptSide}
-					action={action}
 					draft={draft}
+					shiftMode={shiftMode}
+					pairStillConflicting={pairStillConflicting}
 					error={error}
-					disabled={resolutionDisabled}
-					confirmLabel={isChecking ? '確認中…' : 'この解決で進む'}
+					disabled={resolutionDisabled || isCalendarLoading}
+					confirmLabel={confirmLabel}
 					onSelectKeptSide={selectKeptSide}
-					onSelectAction={selectAction}
+					onSuggestShift={applySuggestedShift}
+					onOpenPicker={openPicker}
 					onDraftChange={updateDraft}
 					onConfirm={() => {
 						void confirmResolution()
