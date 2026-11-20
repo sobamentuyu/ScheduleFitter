@@ -1,20 +1,124 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import FullCalendar from "@fullcalendar/react";
 import type { DateClickArg } from "@fullcalendar/interaction";
-import type { DatesSetArg, EventClickArg } from "@fullcalendar/core";
+import type {
+  DatesSetArg,
+  EventClickArg,
+  EventInput,
+} from "@fullcalendar/core";
 import { useCalendarEvents } from "@/hooks/useCalendarEvents.ts";
+import { useConflictPreview } from "@/hooks/useConflictPreview.ts";
 import { useIsMobile } from "@/hooks/useIsMobile.ts";
 import { VIEWS, type CalendarView } from "@/constants/calendarViews.ts";
 import type { EventDetail } from "@/types/event.ts";
+import type { ConflictCalendarPreview } from "@/types/conflictPreview.ts";
+
+const PREVIEW_NEW_ID = "sf-preview-new";
+const PREVIEW_PEER_ID = "sf-preview-peer";
+
+function sameCalendarDay(a: Date, b: Date): boolean {
+  return (
+    a.getFullYear() === b.getFullYear() &&
+    a.getMonth() === b.getMonth() &&
+    a.getDate() === b.getDate()
+  );
+}
+
+function applyPreviewToEvents(
+  events: EventInput[],
+  preview: ConflictCalendarPreview,
+): EventInput[] {
+  if (!preview) return events;
+
+  const deleted = new Set(preview.deletedIds);
+  const next = events
+    .filter((event) => !deleted.has(Number(event.id)))
+    .map((event) => {
+      const id = Number(event.id);
+      const override = preview.existingOverrides[id];
+      const isHighlighted = preview.existingEvent?.id === id;
+      const start = override?.start_at ?? event.start;
+      const end = override?.end_at ?? event.end;
+      const allDay = override?.all_day ?? event.allDay;
+
+      const mapped: EventInput = {
+        ...event,
+        start,
+        end,
+        allDay,
+        classNames: [
+          ...(Array.isArray(event.classNames)
+            ? event.classNames
+            : event.classNames
+              ? [event.classNames]
+              : []),
+          isHighlighted ? "sf-event-existing-focus" : "",
+          isHighlighted && preview.existingEvent?.inConflict
+            ? "sf-event-conflict"
+            : "",
+        ].filter(Boolean),
+        extendedProps: {
+          ...(event.extendedProps ?? {}),
+          previewKind: isHighlighted ? "existing-conflict" : undefined,
+          inConflict: Boolean(
+            isHighlighted && preview.existingEvent?.inConflict,
+          ),
+        },
+      };
+      return mapped;
+    });
+
+  const pushNewPreview = (
+    id: string,
+    event: NonNullable<ConflictCalendarPreview>["newEvent"],
+  ) => {
+    if (!event) return;
+    const previewEvent: EventInput = {
+      id,
+      title: event.title.trim() || "タイトル未定",
+      start: event.start_at,
+      end: event.end_at,
+      allDay: event.all_day,
+      editable: false,
+      classNames: [
+        "sf-event-new",
+        event.inConflict ? "sf-event-conflict" : "",
+      ].filter(Boolean),
+      extendedProps: {
+        description: null,
+        location: event.location ?? null,
+        category: null,
+        previewKind: "new",
+        inConflict: event.inConflict,
+      },
+    };
+    next.push(previewEvent);
+  };
+
+  pushNewPreview(PREVIEW_NEW_ID, preview.newEvent);
+  pushNewPreview(PREVIEW_PEER_ID, preview.peerEvent);
+
+  return next;
+}
+
+function runAfterRender(task: () => void): () => void {
+  const id = window.setTimeout(task, 0);
+  return () => window.clearTimeout(id);
+}
 
 export function useCalendar(revision = 0) {
   const { error, loadEvents, removeEvent, reviseEvent } = useCalendarEvents();
+  const { preview } = useConflictPreview();
   const isMobile = useIsMobile();
   const calendarRef = useRef<FullCalendar>(null);
   const wrapRef = useRef<HTMLDivElement>(null);
   const [title, setTitle] = useState("");
   const [currentView, setCurrentView] = useState<CalendarView>("dayGridMonth");
   const [selectedEvent, setSelectedEvent] = useState<EventDetail | null>(null);
+  const savedViewRef = useRef<{ view: string; date: Date } | null>(null);
+  const previewRef = useRef(preview);
+  const appliedViewKeyRef = useRef<string | null>(null);
+  const appliedEventsKeyRef = useRef<string | null>(null);
 
   const api = () => calendarRef.current?.getApi();
 
@@ -32,6 +136,68 @@ export function useCalendar(revision = 0) {
     }
   }, [revision]);
 
+  useEffect(() => {
+    previewRef.current = preview;
+    return runAfterRender(() => {
+      const calendar = api();
+      if (!calendar) return;
+
+      if (!preview) {
+        if (savedViewRef.current) {
+          const { view, date } = savedViewRef.current;
+          savedViewRef.current = null;
+          appliedViewKeyRef.current = null;
+          calendar.changeView(view, date);
+        }
+        appliedEventsKeyRef.current = null;
+        calendar.refetchEvents();
+        return;
+      }
+
+      if (!savedViewRef.current) {
+        savedViewRef.current = {
+          view: calendar.view.type,
+          date: calendar.getDate(),
+        };
+      }
+
+      const viewKey = `${preview.useWeekView ? "week" : "day"}|${preview.focusDate}`;
+      if (appliedViewKeyRef.current !== viewKey) {
+        const targetView = preview.useWeekView ? "timeGridWeek" : "timeGridDay";
+        const focusDate = new Date(preview.focusDate);
+        appliedViewKeyRef.current = viewKey;
+        if (
+          calendar.view.type !== targetView ||
+          !sameCalendarDay(calendar.getDate(), focusDate)
+        ) {
+          calendar.changeView(targetView, focusDate);
+        }
+      }
+
+      const eventsKey = JSON.stringify(preview);
+      if (appliedEventsKeyRef.current === eventsKey) return;
+      appliedEventsKeyRef.current = eventsKey;
+      calendar.refetchEvents();
+    });
+  }, [preview]);
+
+  const loadEventsWithPreview = useCallback(
+    (
+      fetchInfo: { startStr: string; endStr: string },
+      successCallback: (events: EventInput[]) => void,
+      failureCallback: (error: Error) => void,
+    ) => {
+      void loadEvents(
+        fetchInfo,
+        (events) => {
+          successCallback(applyPreviewToEvents(events, previewRef.current));
+        },
+        failureCallback,
+      );
+    },
+    [loadEvents],
+  );
+
   const handleDatesSet = (arg: DatesSetArg) => {
     setTitle(arg.view.title);
     if (VIEWS.some((view) => view.id === arg.view.type)) {
@@ -42,6 +208,14 @@ export function useCalendar(revision = 0) {
   const handleEventClick = (arg: EventClickArg) => {
     arg.jsEvent.preventDefault();
     const { event } = arg;
+    if (
+      event.id === PREVIEW_NEW_ID ||
+      event.id === PREVIEW_PEER_ID ||
+      event.extendedProps.previewKind === "new" ||
+      event.extendedProps.previewKind === "existing-conflict"
+    ) {
+      return;
+    }
     setSelectedEvent({
       id: event.id,
       title: event.title,
@@ -106,7 +280,7 @@ export function useCalendar(revision = 0) {
   };
   return {
     error,
-    loadEvents,
+    loadEvents: loadEventsWithPreview,
     calendarRef,
     wrapRef,
     title,

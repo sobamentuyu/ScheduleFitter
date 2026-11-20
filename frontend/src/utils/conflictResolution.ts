@@ -27,10 +27,20 @@ export type ConflictTimeDraft = {
 	all_day: boolean
 }
 
-export type ConflictPair = {
+export type ExistingConflictPair = {
+	kind: 'existing'
 	eventIndex: number
 	conflict: ConflictingEvent
 }
+
+/** まだ保存していない追加候補同士の重なり */
+export type PeerConflictPair = {
+	kind: 'peer'
+	eventIndex: number
+	peerIndex: number
+}
+
+export type ConflictPair = ExistingConflictPair | PeerConflictPair
 
 export type ExistingOverride = ConflictTimeDraft & {
 	title: string
@@ -81,18 +91,69 @@ export function refreshSuggestionEventStatus(
 	}
 }
 
+function hasResolvableTime(
+	event: ScheduleSuggestionEvent | undefined,
+): event is ScheduleSuggestionEvent & { start_at: string; end_at: string } {
+	return (
+		event !== undefined &&
+		(event.missing_fields ?? []).length === 0 &&
+		event.start_at !== null &&
+		event.end_at !== null
+	)
+}
+
+/** 追加候補同士で時間が重なるペア。同じペアは1回だけ、若い index を先にする */
+export function findPeerConflictPairs(
+	events: ScheduleSuggestionEvent[],
+): PeerConflictPair[] {
+	const pairs: PeerConflictPair[] = []
+	for (let eventIndex = 0; eventIndex < events.length; eventIndex += 1) {
+		const left = events[eventIndex]
+		if (!hasResolvableTime(left)) continue
+		for (let peerIndex = eventIndex + 1; peerIndex < events.length; peerIndex += 1) {
+			const right = events[peerIndex]
+			if (!hasResolvableTime(right)) continue
+			if (
+				timeRangesConflict(
+					left.start_at,
+					left.end_at,
+					right.start_at,
+					right.end_at,
+				)
+			) {
+				pairs.push({ kind: 'peer', eventIndex, peerIndex })
+			}
+		}
+	}
+	return pairs
+}
+
+export function peerConflictIndices(
+	events: ScheduleSuggestionEvent[],
+): Set<number> {
+	const indices = new Set<number>()
+	for (const pair of findPeerConflictPairs(events)) {
+		indices.add(pair.eventIndex)
+		indices.add(pair.peerIndex)
+	}
+	return indices
+}
+
 /** 情報が揃っている予定の衝突だけ解決対象にする（不足ありは選択画面で不足表示） */
 export function buildConflictQueue(
 	events: ScheduleSuggestionEvent[],
 ): ConflictPair[] {
-	return events.flatMap((event, eventIndex) => {
-		if ((event.missing_fields ?? []).length > 0) return []
-		if (event.start_at === null || event.end_at === null) return []
-		return (event.conflicts ?? []).map((conflict) => ({
-			eventIndex,
-			conflict,
-		}))
-	})
+	const existingPairs: ExistingConflictPair[] = events.flatMap(
+		(event, eventIndex) => {
+			if (!hasResolvableTime(event)) return []
+			return (event.conflicts ?? []).map((conflict) => ({
+				kind: 'existing' as const,
+				eventIndex,
+				conflict,
+			}))
+		},
+	)
+	return [...existingPairs, ...findPeerConflictPairs(events)]
 }
 
 export function resolveExistingConflict(
@@ -230,6 +291,105 @@ export function recomputeEventConflicts(
 	})
 }
 
+function applyPeerConflictResolution(
+	input: ApplyResolutionInput & { pair: PeerConflictPair },
+): ApplyResolutionSuccess | ApplyResolutionFailure {
+	const {
+		workingEvents,
+		knownExistings,
+		existingOverrides,
+		deletedIds,
+		pair,
+		keptSide,
+		action,
+		draft,
+	} = input
+	const peer = workingEvents[pair.peerIndex]
+	if (!peer?.start_at || !peer.end_at) {
+		return { ok: false, error: '予定の日時が不足しています' }
+	}
+
+	if (action === 'delete') {
+		const dropIndex = keptSide === 'new' ? pair.peerIndex : pair.eventIndex
+		const withoutPeer = workingEvents.filter((_, index) => index !== dropIndex)
+		return {
+			ok: true,
+			workingEvents: recomputeEventConflicts(
+				withoutPeer,
+				knownExistings,
+				existingOverrides,
+				deletedIds,
+			),
+			existingOverrides,
+			deletedIds,
+		}
+	}
+
+	if (!draft) {
+		return { ok: false, error: 'ずらす時間を入力してください' }
+	}
+
+	if (new Date(draft.start_at).getTime() >= new Date(draft.end_at).getTime()) {
+		return { ok: false, error: '終了は開始より後にしてください' }
+	}
+
+	const movingIndex = keptSide === 'new' ? pair.peerIndex : pair.eventIndex
+	const priorityIndex = keptSide === 'new' ? pair.eventIndex : pair.peerIndex
+	const priority = workingEvents[priorityIndex]
+	if (!priority?.start_at || !priority.end_at) {
+		return { ok: false, error: '予定の日時が不足しています' }
+	}
+
+	if (
+		timeRangesConflict(
+			draft.start_at,
+			draft.end_at,
+			priority.start_at,
+			priority.end_at,
+		)
+	) {
+		return { ok: false, error: 'まだ時間が重なっています。ずらしてください' }
+	}
+
+	for (let index = 0; index < workingEvents.length; index += 1) {
+		if (index === movingIndex) continue
+		const event = workingEvents[index]
+		if (!event?.start_at || !event.end_at) continue
+		if (
+			timeRangesConflict(
+				draft.start_at,
+				draft.end_at,
+				event.start_at,
+				event.end_at,
+			)
+		) {
+			return { ok: false, error: '他の追加予定と時間が重なっています' }
+		}
+	}
+
+	const withUpdatedTimes = workingEvents.map((event, index) => {
+		if (index !== movingIndex) return event
+		return {
+			...event,
+			start_at: draft.start_at,
+			end_at: draft.end_at,
+			all_day: draft.all_day,
+		}
+	})
+
+	return {
+		ok: true,
+		workingEvents: recomputeEventConflicts(
+			withUpdatedTimes,
+			knownExistings,
+			existingOverrides,
+			deletedIds,
+		),
+		existingOverrides,
+		deletedIds,
+	}
+}
+
 export function applyConflictResolution(
 	input: ApplyResolutionInput,
 ): ApplyResolutionSuccess | ApplyResolutionFailure {
@@ -246,6 +406,19 @@ export function applyConflictResolution(
 	const currentNew = workingEvents[pair.eventIndex]
 	if (!currentNew?.start_at || !currentNew.end_at) {
 		return { ok: false, error: '予定の日時が不足しています' }
+	}
+
+	if (pair.kind === 'peer') {
+		return applyPeerConflictResolution({
+			workingEvents,
+			knownExistings,
+			existingOverrides,
+			deletedIds,
+			pair,
+			keptSide,
+			action,
+			draft,
+		})
 	}
 
 	const conflictId = pair.conflict.id

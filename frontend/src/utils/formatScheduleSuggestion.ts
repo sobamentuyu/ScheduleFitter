@@ -2,6 +2,7 @@ import type {
   ScheduleSuggestion,
   ScheduleSuggestionEvent,
 } from '@/types/scheduleSuggestion.ts'
+import { findPeerConflictPairs } from '@/utils/conflictResolution.ts'
 
 const FIELD_LABELS: Record<string, string> = {
   date: '日付',
@@ -117,12 +118,17 @@ export function formatScheduleSuggestionHeader(
   }
 
   const readyCount = events.filter((event) => event.status === 'ready').length
-  const hasConflicts = events.some(
+  const hasExistingConflicts = events.some(
     (event) => event.conflicts !== null && event.conflicts.length > 0,
   )
+  const hasPeerConflicts = findPeerConflictPairs(events).length > 0
 
-  if (hasConflicts) {
+  if (hasExistingConflicts) {
     return '既存の予定と時間が重なっています'
+  }
+
+  if (hasPeerConflicts) {
+    return '追加する予定同士の時間が重なっています'
   }
 
   if (readyCount === 0) {
